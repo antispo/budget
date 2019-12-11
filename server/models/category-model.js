@@ -4,9 +4,8 @@ const Schema = mongoose.Schema
 
 const Category = new Schema(
     {
-        budgetid: { type: String, required: true},
+        budgetId: { type: String, required: true},
         name: { type: String, required: true },
-        balance: { type: Number, required: true }
     }
 )
 

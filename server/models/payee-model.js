@@ -4,7 +4,7 @@ const Schema = mongoose.Schema
 
 const Payee = new Schema(
     {
-        budgetid: { type: String, required: true},
+        budgetId: { type: String, required: true},
         name: { type: String, required: true },
     }
 )
