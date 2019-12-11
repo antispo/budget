@@ -102,7 +102,7 @@ getAccountById = async (req, res) => {
 }
 
 getAccounts = async (req, res) => {
-    await Account.find({}, (err, accounts) => {
+    await Account.find({ budgetId: req.params.budgetId}, (err, accounts) => {
         if (err) {
             return res.status(400).json({ success: false, error: err })
         }
