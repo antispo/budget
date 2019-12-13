@@ -6,7 +6,7 @@ createAccount = (req, res) => {
     if (!body) {
         return res.status(400).json({
             success: false,
-            error: 'You must provide a account',
+            error: 'You must provide an account',
         })
     }
 
