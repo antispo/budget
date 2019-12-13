@@ -5,6 +5,7 @@ const AccountCtrl = require('../controllers/account-ctrl')
 const CategoryCtrl = require('../controllers/category-ctrl')
 const PayeeCtrl = require('../controllers/payee-ctrl')
 const TransactionCtrl = require('../controllers/transaction-ctrl')
+const EntryCtrl = require('../controllers/entry-ctrl')
 
 const router = express.Router()
 
@@ -37,5 +38,11 @@ router.put('/transaction/:id', TransactionCtrl.updateTransaction)
 router.delete('/transaction/:id', TransactionCtrl.deleteTransaction)
 router.get('/transaction/:id', TransactionCtrl.getTransactionById)
 router.get('/transactions/:budgetId', TransactionCtrl.getTransactions)
+
+router.post('/entry', EntryCtrl.createEntry)
+router.put('/entry/:id', EntryCtrl.updateEntry)
+router.delete('/entry/:id', EntryCtrl.deleteEntry)
+router.get('/entry/:id', EntryCtrl.getEntryById)
+router.get('/entries/:budgetId', EntryCtrl.getEntries)
 
 module.exports = router

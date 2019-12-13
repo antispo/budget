@@ -11,7 +11,8 @@ const Transaction = new Schema(
         categoryId: { type: String, required: false },
         memo: { type: String, required: false },
         ammount: { type: Number, required: true},
-        reconcield: { type: Boolean , required: true }
+        cleared: { type: Boolean , required: true },
+        date: { type: Date, default: Date.now }
     }
 )
 

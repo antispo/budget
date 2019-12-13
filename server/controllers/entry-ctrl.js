@@ -1,39 +1,39 @@
-const Account = require('../models/account-model')
+const Entry = require('../models/entry-model')
 
-createAccount = (req, res) => {
+createEntry = (req, res) => {
     const body = req.body
 
     if (!body) {
         return res.status(400).json({
             success: false,
-            error: 'You must provide a account',
+            error: 'You must provide a entry',
         })
     }
 
-    const account = new Account(body)
+    const entry = new Entry(body)
 
-    if (!account) {
+    if (!entry) {
         return res.status(400).json({ success: false, error: err })
     }
 
-    account
+    entry
         .save()
         .then(() => {
             return res.status(201).json({
                 success: true,
-                id: account._id,
-                message: 'Account created!',
+                id: entry._id,
+                message: 'Entry created!',
             })
         })
         .catch(error => {
             return res.status(400).json({
                 error,
-                message: 'Account not created!',
+                message: 'Entry not created!',
             })
         })
 }
 
-updateAccount = async (req, res) => {
+updateEntry = async (req, res) => {
     const body = req.body
 
     if (!body) {
@@ -43,83 +43,85 @@ updateAccount = async (req, res) => {
         })
     }
 
-    Account.findOne({ _id: req.params.id }, (err, account) => {
+    Entry.findOne({ _id: req.params.id }, (err, entry) => {
         if (err) {
             return res.status(404).json({
                 err,
-                message: 'Account not found!',
+                message: 'Entry not found!',
             })
         }
-        account.dudgetId = body.budgetId
-        account.name = body.name
-        account.balance = body.balance
-        account
+        entry.dudgetId = body.budgetId
+        entry.year = body.year
+        entry.month = body.month
+        entry.categoryId = body.categoryId
+        entry.budgeted = body.budgeted
+        entry
             .save()
             .then(() => {
                 return res.status(200).json({
                     success: true,
-                    id: account._id,
-                    message: 'Account updated!',
+                    id: entry._id,
+                    message: 'Entry updated!',
                 })
             })
             .catch(error => {
                 return res.status(404).json({
                     error,
-                    message: 'Account not updated!',
+                    message: 'Entry not updated!',
                 })
             })
     })
 }
 
-deleteAccount = async (req, res) => {
-    await Account.findOneAndDelete({ _id: req.params.id }, (err, account) => {
+deleteEntry = async (req, res) => {
+    await Entry.findOneAndDelete({ _id: req.params.id }, (err, entry) => {
         if (err) {
             return res.status(400).json({ success: false, error: err })
         }
 
-        if (!account) {
+        if (!entry) {
             return res
                 .status(404)
-                .json({ success: false, error: `Account not found` })
+                .json({ success: false, error: `Entry not found` })
         }
 
-        return res.status(200).json({ success: true, data: account })
+        return res.status(200).json({ success: true, data: entry })
     }).catch(err => console.log(err))
 }
 
-getAccountById = async (req, res) => {
-    await Account.findOne({ _id: req.params.id }, (err, account) => {
+getEntryById = async (req, res) => {
+    await Entry.findOne({ _id: req.params.id }, (err, entry) => {
         if (err) {
             return res.status(400).json({ success: false, error: err })
         }
 
-        if (!account) {
+        if (!entry) {
             return res
                 .status(404)
-                .json({ success: false, error: `Account not found` })
+                .json({ success: false, error: `Entry not found` })
         }
-        return res.status(200).json({ success: true, data: account })
+        return res.status(200).json({ success: true, data: entry })
     }).catch(err => console.log(err))
 }
 
-getAccounts = async (req, res) => {
-    await Account.find({ budgetId: req.params.budgetId}, (err, accounts) => {
+getEntries = async (req, res) => {
+    await Entry.find({ budgetId: req.params.budgetId}, (err, entries) => {
         if (err) {
             return res.status(400).json({ success: false, error: err })
         }
-        if (!accounts.length) {
+        if (!entries.length) {
             return res
                 .status(404)
-                .json({ success: false, error: `Account not found` })
+                .json({ success: false, error: `Entry not found` })
         }
-        return res.status(200).json({ success: true, data: accounts })
+        return res.status(200).json({ success: true, data: entries })
     }).catch(err => console.log(err))
 }
 
 module.exports = {
-    createAccount,
-    updateAccount,
-    deleteAccount,
-    getAccounts,
-    getAccountById,
+    createEntry,
+    updateEntry,
+    deleteEntry,
+    getEntries,
+    getEntryById,
 }

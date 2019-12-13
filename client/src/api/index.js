@@ -34,6 +34,12 @@ export const updateTransactionById = (id, payload) => api.put(`/transaction/${id
 export const deleteTransactionById = id => api.delete(`/transaction/${id}`)
 export const getTransactionById = id => api.get(`/transaction/${id}`)
 
+export const insertEntry = payload => api.post(`/entry`, payload)
+export const getAllEntries = budgetId => api.get(`/entries/${budgetId}`)
+export const updateEntryById = (id, payload) => api.put(`/entry/${id}`, payload)
+export const deleteEntryById = id => api.delete(`/entry/${id}`)
+export const getEntryById = id => api.get(`/entry/${id}`)
+
 const apis = {
     insertBudget,
     getAllBudgets,
@@ -64,6 +70,12 @@ const apis = {
     updateTransactionById,
     deleteTransactionById,
     getTransactionById,
+
+    insertEntry,
+    getAllEntries,
+    updateEntryById,
+    deleteEntryById,
+    getEntryById,
 }
 
 export default apis

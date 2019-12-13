@@ -60,7 +60,8 @@ updateTransaction = async (req, res) => {
         transaction.categoryId = body.categoryId
         transaction.memo = body.memo
         transaction.ammount = body.ammount
-        transaction.reconcield = body.reconcield
+        transaction.cleared = body.cleared
+        transaction.date = body.date
 
         transaction
             .save()
