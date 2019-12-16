@@ -58,3 +58,6 @@ function add_payee {
 function delete_payee {
 	$WR -X DELETE $BAPI/$P/${1}
 }
+
+# $WR $BAPI/$B -H "${HH}" -d "{ \"_id\": \"${BID}\", \"name\":\"Ynab\" }"
+# {"success":true,"id":"5df2468b0fbf700f3df20683","message":"Budget created!"}

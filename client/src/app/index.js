@@ -1,7 +1,9 @@
 import React from 'react'
 
 import AccountFrom from './accountForm'
-import AccountsList from './accountsList'   
+import AccountsList from './accountsList'
+
+import "bootstrap/dist/css/bootstrap.min.css"
  
 import apis from '../api'
 
@@ -18,14 +20,14 @@ class App extends React.Component {
 
     loadBudget() {
         apis.getBudgetById(this.state.budgetId).then(apiResponse => {
-            console.log(apiResponse)
+            console.log("loadBudget", apiResponse)
             this.setState({ name: apiResponse.data.data.name})
         })
     }
 
     loadAccounts() {
         apis.getAllAccounts(this.state.budgetId).then(apiResponse => {
-            console.log(apiResponse)
+            console.log("loadAccounts", apiResponse)
             this.setState({ accounts: apiResponse.data.data })
         });
     }
@@ -33,7 +35,7 @@ class App extends React.Component {
     componentDidMount() {
         this.loadBudget()
         this.loadAccounts()
-        console.log(this.state)
+        console.log("componentDidMount, App.state:", this.state)
     }
 
     saveAccount(name, balance) {
