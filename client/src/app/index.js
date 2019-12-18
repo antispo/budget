@@ -6,6 +6,13 @@ import { BrowserRouter as Router} from 'react-router-dom'
  
 import apis from '../api'
 
+const findItemById = (where, id) => {
+    const res = where.filter( wi => {
+        return wi._id === id
+    })
+    return res[0]
+}
+
 class App extends React.Component {
     constructor() {
         super()
@@ -69,18 +76,20 @@ class App extends React.Component {
                 return { prevState }
             })
         })
+        // .then( () => {
+        //     this.setState( prevState => {
+        //         const prevTransactions = this.state.budget.transactions.map( (t, k) => {
+        //             t.payee = findItemById(this.state.budget.payees, t.payeeId)
+        //             t.accountFrom = findItemById(this.state.budget.accounts, t.accountIdFrom)
+        //             t.accountTo = findItemById(this.state.budget.accounts, t.accountIdTo)
+        //             t.category = findItemById(this.state.budget.categories, t.categoryId)
+        //         })
+        //         prevState.budget.transactions = prevTransactions
+        //         return { prevState }
+        //     })
+        // })
     }
-    deleteAccount = (id) => {
-        const newAccounts = this.state.budget.accounts.filter( (value) => {
-            return value._id !== id
-        })
-        apis.deleteAccountById(id)
-        this.setState( prevState => {
-            // console.log(prevState)
-            prevState.budget.accounts = newAccounts
-            return { prevState }
-        })
-    }
+
     deleteCategory = id => {
         const categories = this.state.budget.categories.filter( (value) => {
             return value._id !== id
@@ -113,18 +122,33 @@ class App extends React.Component {
             return { prevState }
         })
     }
-    addAccount = (e) => {
+    
+    addItem = (e, actions, fields, postaction) => {
         e.preventDefault()
-        const newName = e.target.name.value
-        const newBalance = e.target.balance.value
-        apis.insertAccount({ 
-            budgetId: this.state.budget._id,
-            name: newName,
-            balance: newBalance
-        }).then( () => {
-            this.gAAs()
-        })  
+        let data = {
+            budgetId: this.state.budget._id
+        }
+        fields.map( (field, index) => {
+            // console.log(e.target[field].value)
+            data[field] = e.target[field].value
+        })
+        apis[actions](data).then( () => {
+            this[postaction]()
+        })
+        // console.log(data)
     }
+    deleteItem = (id, items, action) => {
+        // console.log(id, items, action)
+        const newItems = this.state.budget[items].filter( item => {
+            return item._id !== id
+        })
+        apis[action](id)
+        this.setState( prevState => {
+            prevState.budget[items] = newItems
+            return { prevState }
+        })
+    }
+
     addCategory = e => {
         e.preventDefault()
         const name = e.target.name.value
@@ -167,31 +191,57 @@ class App extends React.Component {
                 <div>
                     <ul>
                         {this.state.budget.accounts.length !== 0 && 
-                            <AccountList
-                                accounts={this.state.budget.accounts}
-                                deleteAccount={this.deleteAccount}
+                            <ListItems
+                                fields={["name", "balance"]}
+                                data={this.state.budget.accounts}
+                                deleteItem={this.deleteItem}
+                                items="accounts"
+                                apiCall="deleteAccountById"
                             />
                         }
                     </ul>
-                    <AddAccountForm addAccount={this.addAccount} />
+                    <AddItemForm
+                        action={ (e) => {
+                            this.addItem(e, "insertAccount", ["name", "balance"], "gAAs")
+                        }}
+                        fields={[
+                                { name: "name", ph: "Add Account" }, 
+                                { name: "balance", ph: "Balance" }
+                            ]}
+                    />
+
+
                     <ul>
-                        {this.state.budget.categories.length !== 0 &&
-                            <CategoryList 
-                                categories={this.state.budget.categories}
-                                deleteCategory={this.deleteCategory}
-                            />
-                        }
+                        <ListItems
+                            fields={["name"]}
+                            data={this.state.budget.categories}
+                            deleteItem={this.deleteItem}
+                            items="categories"
+                            apiCall="deleteCategoryById"
+                        />
                     </ul>
-                    <AddCategoryForm addCategory={this.addCategory} />
+                    <AddItemForm 
+                        action={ e => {
+                            this.addItem(e, "insertCategory", ["name"], "gACs")
+                        }}
+                        fields={[{name: "name", ph: "Add Category"}]}
+                     />
+
                     <ul>
-                        {this.state.budget.payees.length !== 0 && 
-                            <PayeeList
-                                payees={this.state.budget.payees}
-                                deletePayee={this.deletePayee}
-                            />
-                        }
+                        <ListItems
+                            fields={["name"]}
+                            data={this.state.budget.payees}
+                            deleteItem={this.deleteItem}
+                            items="payees"
+                            apiCall="deletePayeeById"
+                        />
                     </ul>
-                    <AddPayeeForm addPayee={this.addPayee} />
+                    <AddItemForm
+                        action={ e => {
+                            this.addItem(e, "insertPayee", ["name"], "gAPs")
+                        }}
+                        fields={[{name: "name", ph: "Add Payee"}]}
+                    />
                     
                     <AddTransactionForm
                         payees={this.state.budget.payees}
@@ -209,72 +259,46 @@ class App extends React.Component {
     }
 }
 
-const AccountList = props => {
+const ListItems = props => {
     return (
-        props.accounts.map( account => {
-        return (
-            <li key={account._id} id={account._id}>
-                <span>{account.name}</span> |
-                <span>{account.balance}</span> | 
-                <span
-                    onClick={ () => {
-                        props.deleteAccount(account._id)
-                    }}>
-                    del
-                </span>
-            </li>
+        props.data.map ( item => {
+            return (
+                <li key={item._id} id={item._id}>
+                    {/* { console.log(props.fields) } */}
+                    {props.fields.map( (field, index) => {
+                        return (
+                            <span key={index}>| {item[field]} |</span> 
+                        )
+                    })}
+                    <span onClick={ () => {
+                        props.deleteItem(item._id, props.items, props.apiCall)
+                    }}>del</span>
+                </li>
             )
         })
     )
 }
-
-const CategoryList = props => {
+const AddItemForm = props => {
     return (
-        props.categories.map( category => {
-        return (
-            <li key={category._id} id={category._id}>
-                <span>{category.name}</span> |
-                <span
-                    onClick={ () => {
-                        props.deleteCategory(category._id)
-                    }}>
-                    del
-                </span>
-            </li>
-            )
-        })
+        <div className="form">
+            <form onSubmit={props.action}>
+                {props.fields.map( (field, key) => {
+                    return (
+                        <input key={key} name={field.name} placeholder={field.ph} />
+                    )
+                })}
+                <button>Submit</button>
+            </form>
+        </div>
     )
-}
-
-const PayeeList = props => {
-    return (
-        props.payees.map( payee => {
-        return (
-            <li key={payee._id} id={payee._id}>
-                <span>{payee.name}</span> |
-                <span
-                    onClick={ () => {
-                        props.deletePayee(payee._id)
-                    }}>
-                    del
-                </span>
-            </li>
-            )
-        })
-    )
-}
-
-const findItemById = (where, id) => {
-    const res = where.filter( wi => {
-        return wi._id === id
-    })
-    return res[0]
 }
 
 const TransactionList = props => {
+    console.log(props.ts.transactions)
     return (
         props.ts.transactions.map( t => {
             const payee = findItemById(props.ts.payees, t.payeeId)
+            // const payee = t.GET_BY_ID("payees", t.id)
             const accountFrom = findItemById(props.ts.accounts, t.accountIdFrom)
             const accountTo = findItemById(props.ts.accounts, t.accountIdTo)
             const category = findItemById(props.ts.categories, t.categoryId)
@@ -292,40 +316,6 @@ const TransactionList = props => {
                 </li>
             )
         })
-    )
-}
-
-const AddAccountForm = (props) => {
-    return (
-        <div className="form">
-            <form onSubmit={props.addAccount}>
-                <input name="name" type="text" placeholder="Add account" />
-                <input name="balance" type="text" placeholder="0" />
-                <button>Submit</button>
-            </form>
-        </div>
-    )
-}
-
-const AddCategoryForm = (props) => {
-    return (
-        <div className="form">
-            <form onSubmit={props.addCategory}>
-                <input name="name" type="text" placeholder="Add category" />
-                <button>Submit</button>
-            </form>
-        </div>
-    )
-}
-
-const AddPayeeForm = (props) => {
-    return (
-        <div className="form">
-            <form onSubmit={props.addPayee}>
-                <input name="name" type="text" placeholder="Add payee" />
-                <button>Submit</button>
-            </form>
-        </div>
     )
 }
 
