@@ -15,6 +15,8 @@ C=category
 CS=categories
 P=payee
 PS=${P}s
+T=transaction
+TS=${T}s
 
 
 function get_budgets {
@@ -57,6 +59,10 @@ function add_payee {
 }
 function delete_payee {
 	$WR -X DELETE $BAPI/$P/${1}
+}
+
+function get_transactions {
+	$WR $BAPI/$TS/$BID
 }
 
 # $WR $BAPI/$B -H "${HH}" -d "{ \"_id\": \"${BID}\", \"name\":\"Ynab\" }"
