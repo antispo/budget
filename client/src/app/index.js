@@ -24,6 +24,8 @@ class App extends React.Component {
                 categories: [],
                 payees: [],
                 transactions: [],
+                entries: [],
+                total: 0,
             },
         }
     }
@@ -40,6 +42,23 @@ class App extends React.Component {
         this.gACs()
         this.gAPs()
         this.gATs()
+        this.gAEs()
+    }
+    // recalculate
+    rc() {
+        // console.log("in rc")
+        let total = 0
+        // console.log("Total", total)
+        this.state.budget.accounts.map( a => {
+            // console.log(a.name, a.balance)
+            total += a.balance
+        })
+        // console.log("Total", total)
+        this.setState( prevState => {
+            prevState.budget.total = total
+            return { prevState }
+        })
+        // console.log("Total", this.state.budget.total)
     }
     gAAs() {
         apis.getAllAccounts(this.state.budget._id).then( apiResponse => {
@@ -49,6 +68,7 @@ class App extends React.Component {
             })
         }).then( () => {
             // console.log(this.state.budget.accounts)
+            this.rc()
         })
     }
     gACs() {
@@ -76,18 +96,14 @@ class App extends React.Component {
                 return { prevState }
             })
         })
-        // .then( () => {
-        //     this.setState( prevState => {
-        //         const prevTransactions = this.state.budget.transactions.map( (t, k) => {
-        //             t.payee = findItemById(this.state.budget.payees, t.payeeId)
-        //             t.accountFrom = findItemById(this.state.budget.accounts, t.accountIdFrom)
-        //             t.accountTo = findItemById(this.state.budget.accounts, t.accountIdTo)
-        //             t.category = findItemById(this.state.budget.categories, t.categoryId)
-        //         })
-        //         prevState.budget.transactions = prevTransactions
-        //         return { prevState }
-        //     })
-        // })
+    }
+    gAEs() {
+        apis.getAllEntries(this.state.budget._id).then( apiResponse => {
+            this.setState( prevState => {
+                prevState.budget.entries = apiResponse.data.data
+                return( prevState )
+            })
+        })
     }
 
     deleteCategory = id => {
@@ -122,6 +138,17 @@ class App extends React.Component {
             return { prevState }
         })
     }
+
+    deleteEntry = id => {
+        const es = this.state.budget.entries.filter( e => {
+            return e._id !== id
+        })
+        apis.deleteEntryById(id)
+        this.setState( prevState => {
+            prevState.budget.entries = es
+            return { prevState }
+        })
+    }
     
     addItem = (e, actions, fields, postaction) => {
         e.preventDefault()
@@ -136,6 +163,7 @@ class App extends React.Component {
             this[postaction]()
         })
         // console.log(data)
+        this.rc()
     }
     deleteItem = (id, items, action) => {
         // console.log(id, items, action)
@@ -146,6 +174,8 @@ class App extends React.Component {
         this.setState( prevState => {
             prevState.budget[items] = newItems
             return { prevState }
+        }, () => {
+            this.rc()
         })
     }
 
@@ -181,14 +211,42 @@ class App extends React.Component {
             ammount: e.target.ammount.value,
             cleared: true
         }
+        var accountFrom = findItemById(this.state.budget.accounts, data.accountIdFrom)
+        if ( accountFrom !== undefined) { 
+            accountFrom.balance -= parseFloat(data.ammount)
+            apis.updateAccountById(accountFrom._id, accountFrom).then( () => {
+                this.gAAs()
+            })
+        }
+        var accountTo = findItemById(this.state.budget.accounts, data.accountIdTo)
+        if (accountTo !== undefined) {
+            accountTo.balance += parseFloat(data.ammount)
+            apis.updateAccountById(accountTo._id, accountTo).then( () => {
+                this.gAAs()
+            })
+        }
         apis.insertTransaction(data).then( () => {
             this.gATs()
+        })
+    }
+    addEntry = e => {
+        e.preventDefault()
+        const data = {
+            budgetId: this.state.budget._id,
+            year: e.target.year.value,
+            month: e.target.month.value,
+            categoryId: e.target.category.value,
+            budgeted: e.target.budgeted.value,
+        }
+        apis.insertEntry(data).then( () => {
+            this.gAEs()
         })
     }
     render() {
         return (
             <Router>
                 <div>
+                    <Totallist total={this.state.budget.total} />
                     <ul>
                         {this.state.budget.accounts.length !== 0 && 
                             <ListItems
@@ -243,20 +301,35 @@ class App extends React.Component {
                         fields={[{name: "name", ph: "Add Payee"}]}
                     />
                     
+                    <TransactionList 
+                        ts={this.state.budget}
+                        deleteTransaction={this.deleteTransaction}
+                    />
                     <AddTransactionForm
                         payees={this.state.budget.payees}
                         accounts={this.state.budget.accounts}
                         categories={this.state.budget.categories}
                         addTransaction={this.addTransaction}
                     />
-                    <TransactionList 
-                        ts={this.state.budget}
-                        deleteTransaction={this.deleteTransaction}
+
+                    <EntryList
+                        es={this.state.budget}
+                        deleteEntry={this.deleteEntry}
+                    />
+                    <AddEntryForm
+                        categories={this.state.budget.categories}
+                        addEntry={this.addEntry}
                     />
                 </div>
             </Router>
         )
     }
+}
+
+const Totallist = props => {
+    return (
+        <div>Total: {props.total}</div>
+    )
 }
 
 const ListItems = props => {
@@ -294,7 +367,7 @@ const AddItemForm = props => {
 }
 
 const TransactionList = props => {
-    console.log(props.ts.transactions)
+    // console.log(props.ts.transactions)
     return (
         props.ts.transactions.map( t => {
             const payee = findItemById(props.ts.payees, t.payeeId)
@@ -312,6 +385,25 @@ const TransactionList = props => {
                     | <span>{t.ammount}</span> |
                     | <span onClick={ () => {
                         props.deleteTransaction(t._id)
+                    }}>delete</span> |
+                </li>
+            )
+        })
+    )
+}
+
+const EntryList = props => {
+    return (
+        props.es.entries.map( e => {
+            const category = findItemById(props.es.categories, e.categoryId)
+            return (
+                <li key={e._id} id={e._id}>
+                    | <span>{e.year}</span> |
+                    | <span>{e.month}</span> |
+                    | <span>{ (category !== undefined) ? category.name : "NO_CATEGORY"}</span> |
+                    | <span>{e.budgeted}</span> |
+                    | <span onClick={ () => {
+                        props.deleteEntry(e._id)
                     }}>delete</span> |
                 </li>
             )
@@ -361,6 +453,25 @@ const AddTransactionForm = props => {
                 <button>Submit</button>
             </form>
         </div> 
+    )
+}
+
+const AddEntryForm = props => {
+    return (
+        <form onSubmit={props.addEntry}>
+            <input name="year" type="text" placeholder="Year" />
+            <input name="month" type="text" placeholder="Month" />
+            <select name="category">
+                <option key="no-category"></option>
+                {props.categories.map( category => {
+                    return (
+                        <option key={category._id} value={category._id}>{category.name}</option>
+                    )
+                })}
+            </select>
+            <input name="budgeted" type="text" placeholder="Budgeted" />
+            <button>Submit</button>
+        </form>
     )
 }
 
