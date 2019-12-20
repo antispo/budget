@@ -43,23 +43,9 @@ class App extends React.Component {
         this.gAPs()
         this.gATs()
         this.gAEs()
+        
     }
-    // recalculate
-    rc() {
-        // console.log("in rc")
-        let total = 0
-        // console.log("Total", total)
-        this.state.budget.accounts.map( a => {
-            // console.log(a.name, a.balance)
-            total += a.balance
-        })
-        // console.log("Total", total)
-        this.setState( prevState => {
-            prevState.budget.total = total
-            return { prevState }
-        })
-        // console.log("Total", this.state.budget.total)
-    }
+
     gAAs() {
         apis.getAllAccounts(this.state.budget._id).then( apiResponse => {
             this.setState( prevState => {
@@ -68,15 +54,20 @@ class App extends React.Component {
             })
         }).then( () => {
             // console.log(this.state.budget.accounts)
-            this.rc()
+            
+        }).catch( e => {
+            // console.log(e)
         })
     }
+
     gACs() {
         apis.getAllCategories(this.state.budget._id).then ( apiResponse => {
             this.setState ( prevState => {
                 prevState.budget.categories = apiResponse.data.data
                 return { prevState }
             })
+        }).catch( e => {
+            // console.log(e)
         })
     }
     gAPs() {
@@ -87,6 +78,8 @@ class App extends React.Component {
             })
         }).then( () => {
             // console.log(this.state.budget.payees)
+        }).catch( e => {
+            // console.log(e)
         })
     }
     gATs() {
@@ -95,6 +88,8 @@ class App extends React.Component {
                 prevState.budget.transactions = apiResponse.data.data
                 return { prevState }
             })
+        }).catch( e => {
+            // console.log(e)
         })
     }
     gAEs() {
@@ -103,6 +98,8 @@ class App extends React.Component {
                 prevState.budget.entries = apiResponse.data.data
                 return( prevState )
             })
+        }).catch( e => {
+            // console.log(e)
         })
     }
 
@@ -155,7 +152,7 @@ class App extends React.Component {
         let data = {
             budgetId: this.state.budget._id
         }
-        fields.map( (field, index) => {
+        fields.map( (field) => {
             // console.log(e.target[field].value)
             data[field] = e.target[field].value
         })
@@ -163,7 +160,7 @@ class App extends React.Component {
             this[postaction]()
         })
         // console.log(data)
-        this.rc()
+        
     }
     deleteItem = (id, items, action) => {
         // console.log(id, items, action)
@@ -175,7 +172,7 @@ class App extends React.Component {
             prevState.budget[items] = newItems
             return { prevState }
         }, () => {
-            this.rc()
+            
         })
     }
 
