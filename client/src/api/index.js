@@ -21,6 +21,7 @@ export const getAllCategories = budgetId => api.get(`/categories/${budgetId}`)
 export const updateCategoryById = (id, payload) => api.put(`/category/${id}`, payload)
 export const deleteCategoryById = id => api.delete(`/category/${id}`)
 export const getCategoryById = id => api.get(`/category/${id}`)
+export const getCategoryByName = name => api.get(`/category/${name}`)
 
 export const insertPayee = payload => api.post(`/payee`, payload)
 export const getAllPayees = budgetId => api.get(`/payees/${budgetId}`)

@@ -2,7 +2,9 @@
 # curl -H "Content-Type: application/json" -X POST -d '{ "name": "ynab" }' http://localhost:3001/api/budget
 
 #BID="5df32c54383dbe4ccf4c903e"
-BID="5df2468b0fbf700f3df20683"
+#BID="5df2468b0fbf700f3df20683"
+#oldYNAB
+BID="5dfdfd026a572627cc560a0f"
 
 HH="Content-Type: application/json"
 WR="curl -s"
@@ -17,7 +19,12 @@ P=payee
 PS=${P}s
 T=transaction
 TS=${T}s
+E=entry
+ES=entries
 
+function add_budget {
+	$WR -X POST -H "${HH}" -d "{ \"name\": \"oldYNAB\" }" $BAPI/$B
+}
 
 function get_budgets {
 	$WR $BAPI/$BS
@@ -39,6 +46,14 @@ function delete_account {
 	$WR -X DELETE $BAPI/$A/${1}
 }
 
+
+function get_category {
+	$WR $BAPI/$C/${1}
+}
+function get_category_id_by_name {
+	get_categories | jq | grep -C 2 "${1}" | grep id | cut -d: -f2 | sed -e 's/ "//' -e 's/",//'
+}
+
 function get_categories {
 	$WR $BAPI/$CS/${BID}
 }
@@ -50,6 +65,7 @@ function add_category {
 function delete_category {
 	$WR -X DELETE $BAPI/$C/${1}
 }
+
 
 function get_payees {
 	$WR $BAPI/$PS/${BID}
@@ -63,6 +79,18 @@ function delete_payee {
 
 function get_transactions {
 	$WR $BAPI/$TS/$BID
+}
+
+function add_entry {
+	$WR -H "${HH}" -d "{ \"budgetId\": \"${BID}\", \"year\": \"2019\", \"month\": \"11\", \"categoryId\":\"${1}\", \"budgeted\": \"${2}\" }" $BAPI/$E
+}
+
+function get_entries {
+	$WR $BAPI/$ES/$BID
+}
+
+function delete_entry {
+	$WR -X DELETE $BAPI/$E/${1}
 }
 
 # $WR $BAPI/$B -H "${HH}" -d "{ \"_id\": \"${BID}\", \"name\":\"Ynab\" }"

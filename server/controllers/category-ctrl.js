@@ -101,6 +101,22 @@ getCategoryById = async (req, res) => {
     }).catch(err => console.log(err))
 }
 
+getCategoryByName = async (req, res) => {
+    await Category.findOne({ name: req.params.name }, (err, category) => {
+        console.log(category)
+        if (err) {
+            return res.status(400).json({ success: false, error: err })
+        }
+
+        if (!category) {
+            return res
+                .status(404)
+                .json({ success: false, error: `Category not found` })
+        }
+        return res.status(200).json({ success: true, data: category })
+    }).catch(err => console.log(err))
+}
+
 getCategories = async (req, res) => {
     await Category.find({ budgetId: req.params.budgetId}, (err, categories) => {
         if (err) {
@@ -121,4 +137,5 @@ module.exports = {
     deleteCategory,
     getCategories,
     getCategoryById,
+    getCategoryByName,
 }

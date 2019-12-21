@@ -1,7 +1,7 @@
 import React from 'react'
 
 import "bootstrap/dist/css/bootstrap.min.css"
-import { BrowserRouter as Router} from 'react-router-dom'
+// import { BrowserRouter as Router} from 'react-router-dom'
 // import Route from ('react-router-dom').Route
 
 import apis from '../api'
@@ -13,12 +13,19 @@ const findItemById = (where, id) => {
     return res[0]
 }
 
+const findEntryByCategoryId = (entries, categoryId) => {
+    const res = entries.filter( e => {
+        return e.categoryId === categoryId
+    })
+    return res[0]
+}
+
 class App extends React.Component {
     constructor() {
         super()
         this.state = {
             budget: {
-                _id: "5df2468b0fbf700f3df20683",
+                _id: "5dfdfd026a572627cc560a0f",
                 name: "",
                 accounts: [],
                 categories: [],
@@ -43,7 +50,8 @@ class App extends React.Component {
         this.gAPs()
         this.gATs()
         this.gAEs()
-        
+        // this.calculateEntries()
+        this.calculateTotal()
     }
 
     gAAs() {
@@ -54,7 +62,7 @@ class App extends React.Component {
             })
         }).then( () => {
             // console.log(this.state.budget.accounts)
-            
+            this.calculateTotal()
         }).catch( e => {
             // console.log(e)
         })
@@ -88,16 +96,59 @@ class App extends React.Component {
                 prevState.budget.transactions = apiResponse.data.data
                 return { prevState }
             })
+        }).then( () => {
+            this.calculateEntries()
         }).catch( e => {
             // console.log(e)
+        })
+    }
+    calculateTotal() {
+        var total = 0
+        this.state.budget.accounts.map( a => {
+            total += a.balance
+        })
+        this.setState( p => {
+            p.budget.total = total
+            return(p)
+        })
+    }
+    calculateEntries() {
+        const entries = this.state.budget.entries
+        const transactions = this.state.budget.transactions
+        // console.log("kk", entries)
+        entries.map( entry => {
+            let activitySum = 0
+            transactions.map( t => {
+                // stupid is stupid
+                // console.log(t, t._id, entry.categoryId)
+                if ( t.categoryId === entry.categoryId ) {
+                    // console.log(t.ammount)
+                    activitySum += t.ammount
+                }
+                
+            })
+            // console.log(activitySum)
+            entry['activitySum'] = activitySum
+            entry['available'] = entry.budgeted - activitySum
+        })
+        this.setState( p => {
+            p.budget.entries = entries
+            return( p )
+        }, () => {
+            // console.log(this.state.budget.entries)
         })
     }
     gAEs() {
         apis.getAllEntries(this.state.budget._id).then( apiResponse => {
             this.setState( prevState => {
                 prevState.budget.entries = apiResponse.data.data
+                // prevState.budget.entries.map( entry => {
+                //     entry.activity = []
+                // })
                 return( prevState )
             })
+        }).then( () => {
+            this.calculateEntries()
         }).catch( e => {
             // console.log(e)
         })
@@ -129,10 +180,33 @@ class App extends React.Component {
         const ts = this.state.budget.transactions.filter( t => {
             return t._id !== id
         })
-        apis.deleteTransactionById(id)
+        const transaction = this.state.budget.transactions.filter( t => {
+            return t._id === id
+        })[0]
+        var accountTo = findItemById(this.state.budget.accounts, transaction.accountIdTo)
+        if ( accountTo !== undefined ) {
+            accountTo.balance -= parseFloat(transaction.ammount)
+            apis.updateAccountById(accountTo._id, accountTo).then( () => {
+                this.gAAs()
+            })
+        }
+        var accountFrom = findItemById(this.state.budget.accounts, transaction.accountIdFrom)
+        if ( accountFrom !== undefined) {
+            accountFrom.balance += parseFloat(transaction.ammount)
+            apis.updateAccountById(accountFrom._id, accountFrom).then( () => {
+                this.gAAs()
+            })
+        }
+        // console.log(transaction)
+        apis.deleteTransactionById(id).then( apiResponse => {
+            // console.log(apiResponse.data.data)
+        })
         this.setState( prevState => {
             prevState.budget.transactions = ts
             return { prevState }
+        }, () => {
+            this.calculateEntries()
+            this.calculateTotal()
         })
     }
 
@@ -160,6 +234,7 @@ class App extends React.Component {
             this[postaction]()
         })
         // console.log(data)
+        this.calculateTotal()
         
     }
     deleteItem = (id, items, action) => {
@@ -173,27 +248,6 @@ class App extends React.Component {
             return { prevState }
         }, () => {
             
-        })
-    }
-
-    addCategory = e => {
-        e.preventDefault()
-        const name = e.target.name.value
-        apis.insertCategory({
-            budgetId: this.state.budget._id,
-            name: name
-        }).then( () => {
-            this.gACs()
-        })
-    }
-    addPayee = e => {
-        e.preventDefault()
-        const name = e.target.name.value
-        apis.insertPayee({
-            budgetId: this.state.budget._id,
-            name: name
-        }).then( () => {
-            this.gAPs()
         })
     }
     addTransaction = e => {
@@ -224,8 +278,11 @@ class App extends React.Component {
         }
         apis.insertTransaction(data).then( () => {
             this.gATs()
+            this.calculateEntries()
+            this.calculateTotal()
         })
     }
+
     addEntry = e => {
         e.preventDefault()
         const data = {
@@ -239,10 +296,11 @@ class App extends React.Component {
             this.gAEs()
         })
     }
+
     render() {
         return (
-            <Router>
-                <div>
+            
+                <div className="App">
                     <Totallist total={this.state.budget.total} />
                     <ul>
                         {this.state.budget.accounts.length !== 0 && 
@@ -318,7 +376,6 @@ class App extends React.Component {
                         addEntry={this.addEntry}
                     />
                 </div>
-            </Router>
         )
     }
 }
@@ -390,14 +447,19 @@ const TransactionList = props => {
 }
 
 const EntryList = props => {
+    // console.log("EntryList:render()")
+    
     return (
         props.es.entries.map( e => {
+            // console.log("E", e)
             const category = findItemById(props.es.categories, e.categoryId)
             return (
                 <li key={e._id} id={e._id}>
                     | <span>{e.year}</span> |
                     | <span>{e.month}</span> |
                     | <span>{ (category !== undefined) ? category.name : "NO_CATEGORY"}</span> |
+                    | <span>{e.activitySum}</span> |
+                    | <span>{e.available}</span> |
                     | <span>{e.budgeted}</span> |
                     | <span onClick={ () => {
                         props.deleteEntry(e._id)

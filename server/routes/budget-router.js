@@ -25,6 +25,7 @@ router.post('/category', CategoryCtrl.createCategory)
 router.put('/category/:id', CategoryCtrl.updateCategory)
 router.delete('/category/:id', CategoryCtrl.deleteCategory)
 router.get('/category/:id', CategoryCtrl.getCategoryById)
+router.get('/category/:name', CategoryCtrl.getCategoryByName)
 router.get('/categories/:budgetId', CategoryCtrl.getCategories)
 
 router.post('/payee', PayeeCtrl.createPayee)
