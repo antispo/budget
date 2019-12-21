@@ -1,0 +1,48 @@
+.main {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: space-around;
+}
+
+.total {
+    text-align: center;
+    font-size: 24px;
+}
+
+.accounts, .categories, .payees {
+    height: 300px;
+    overflow: scroll;
+    border: 1px solid black;
+    width: 30%;
+}
+
+.entries, .transactions {
+    height: 500px;
+    overflow: scroll;
+}
+
+form, .account-form {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-around;
+}
+  
+.accountslist {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+table {
+    /* display: flex; */
+    /* justify-content: space-between; */
+    padding: 5px;
+    margin-right: 10px;
+    /* justify-items: stretch; */
+    /* flex-shrink: 0 */
+}
+
+tr, td {
+    flex-shrink: 0
+}

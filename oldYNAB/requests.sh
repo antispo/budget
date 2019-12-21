@@ -23,7 +23,7 @@ E=entry
 ES=entries
 
 function add_budget {
-	$WR -X POST -H "${HH}" -d "{ \"name\": \"oldYNAB\" }" $BAPI/$B
+	"${WR}" -X POST -H "${HH}" -d "{ \"name\": \"oldYNAB\" }" $BAPI/$B
 }
 
 function get_budgets {
@@ -35,7 +35,7 @@ function get_budget {
 }
 
 function get_accounts {
-	$WR $BAPI/$AS/$BID
+	eval $WR $BAPI/$AS/$BID
 }
 
 function add_account {
@@ -55,7 +55,7 @@ function get_category_id_by_name {
 }
 
 function get_categories {
-	$WR $BAPI/$CS/${BID}
+	eval $WR $BAPI/$CS/${BID}
 }
 
 function add_category {
@@ -68,7 +68,7 @@ function delete_category {
 
 
 function get_payees {
-	$WR $BAPI/$PS/${BID}
+	eval "${WR}" $BAPI/$PS/${BID}
 }
 function add_payee {
 	$WR -X POST -H "${HH}" -d "{ \"budgetId\": \"${BID}\", \"name\": \"${1}\" }" $BAPI/$P
@@ -79,6 +79,10 @@ function delete_payee {
 
 function get_transactions {
 	$WR $BAPI/$TS/$BID
+}
+
+function add_transaction {
+	eval $WR -H "${HH}" -d ${1} $BAPI/$T
 }
 
 function add_entry {

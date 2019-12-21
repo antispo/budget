@@ -1,21 +1,18 @@
 import React from 'react'
 
+import './App.css';
+
+const EM = require('exact-math');
+
 import "bootstrap/dist/css/bootstrap.min.css"
-// import { BrowserRouter as Router} from 'react-router-dom'
-// import Route from ('react-router-dom').Route
+
+
 
 import apis from '../api'
 
 const findItemById = (where, id) => {
     const res = where.filter( wi => {
         return wi._id === id
-    })
-    return res[0]
-}
-
-const findEntryByCategoryId = (entries, categoryId) => {
-    const res = entries.filter( e => {
-        return e.categoryId === categoryId
     })
     return res[0]
 }
@@ -40,18 +37,13 @@ class App extends React.Component {
         apis.getBudgetById(this.state.budget._id).then( apiResponse => {
             this.setState( prevState => {  
                 prevState.budget.name = apiResponse.data.data.name
+                
                 return { prevState }
+            }, () => {
+                
+                this.gAAs()
             })
-        }).then( () => {
-            // console.log(this.state.budget.name)
         })
-        this.gAAs()
-        this.gACs()
-        this.gAPs()
-        this.gATs()
-        this.gAEs()
-        // this.calculateEntries()
-        this.calculateTotal()
     }
 
     gAAs() {
@@ -61,10 +53,11 @@ class App extends React.Component {
                 return { prevState }
             })
         }).then( () => {
-            // console.log(this.state.budget.accounts)
-            this.calculateTotal()
+            
+            
+            this.gACs()
         }).catch( e => {
-            // console.log(e)
+            
         })
     }
 
@@ -74,8 +67,10 @@ class App extends React.Component {
                 prevState.budget.categories = apiResponse.data.data
                 return { prevState }
             })
+        }).then( () => {
+            this.gAPs()
         }).catch( e => {
-            // console.log(e)
+            
         })
     }
     gAPs() {
@@ -85,49 +80,87 @@ class App extends React.Component {
                 return { prevState }
             })
         }).then( () => {
-            // console.log(this.state.budget.payees)
+            
+            this.gATs()
+            
         }).catch( e => {
-            // console.log(e)
+            
         })
     }
     gATs() {
+        
         apis.getAllTransactions(this.state.budget._id).then( apiResponse => {
             this.setState( prevState => {
                 prevState.budget.transactions = apiResponse.data.data
+                
                 return { prevState }
+            }, () => {
+                this.calculateEntries()
+                this.processTransactions()
+                this.calculateTotal()
             })
         }).then( () => {
-            this.calculateEntries()
+            
         }).catch( e => {
-            // console.log(e)
+            
         })
     }
     calculateTotal() {
         var total = 0
-        this.state.budget.accounts.map( a => {
-            total += a.balance
+        this.state.budget.accounts.forEach( a => {
+            total = EM.add(total, a.balance)
         })
         this.setState( p => {
             p.budget.total = total
-            return(p)
+            return( p ) 
+        }, () => {
+        })
+    }
+
+    processTransactions() {
+        this.state.budget.transactions.forEach( t => {
+            if (t.accountIdFrom !== "") {
+                this.setState( p => {
+                    p.budget.accounts.forEach( a => {
+                        if ( t.accountIdFrom === a._id ) {
+                            
+                            a.balance = EM.sub(a.balance, t.ammount)
+                            
+                        }
+                    })
+                    return( p )
+                })
+            }
+            if (t.accountIdTo !== "") {
+                this.setState( p => {
+                    p.budget.accounts.forEach( a => {
+                        if ( t.accountIdTo === a._id ) {
+                            a.balance = EM.add(a.balance, t.ammount)
+                            
+                        }
+                    })
+                    return( p )
+                }, () => {
+                    this.calculateTotal()
+                })
+            }
         })
     }
     calculateEntries() {
         const entries = this.state.budget.entries
         const transactions = this.state.budget.transactions
-        // console.log("kk", entries)
-        entries.map( entry => {
+        
+        entries.forEach( entry => {
             let activitySum = 0
-            transactions.map( t => {
-                // stupid is stupid
-                // console.log(t, t._id, entry.categoryId)
+            transactions.forEach( t => {
+                
+                
                 if ( t.categoryId === entry.categoryId ) {
-                    // console.log(t.ammount)
                     activitySum += t.ammount
                 }
                 
             })
-            // console.log(activitySum)
+            
             entry['activitySum'] = activitySum
             entry['available'] = entry.budgeted - activitySum
         })
@@ -135,22 +168,22 @@ class App extends React.Component {
             p.budget.entries = entries
             return( p )
         }, () => {
-            // console.log(this.state.budget.entries)
+            
         })
     }
     gAEs() {
         apis.getAllEntries(this.state.budget._id).then( apiResponse => {
             this.setState( prevState => {
                 prevState.budget.entries = apiResponse.data.data
-                // prevState.budget.entries.map( entry => {
-                //     entry.activity = []
-                // })
+                
+                
+                
                 return( prevState )
             })
         }).then( () => {
             this.calculateEntries()
         }).catch( e => {
-            // console.log(e)
+            
         })
     }
 
@@ -160,7 +193,7 @@ class App extends React.Component {
         })
         apis.deleteCategoryById(id)
         this.setState( prevState => {
-            // console.log(prevState)
+            
             prevState.budget.categories = categories
             return { prevState }
         })
@@ -171,11 +204,13 @@ class App extends React.Component {
         })
         apis.deletePayeeById(id)
         this.setState( prevState => {
-            // console.log(prevState)
+            
             prevState.budget.payees = newPayees
             return { prevState }
         })
     }
+
+
     deleteTransaction = id => {
         const ts = this.state.budget.transactions.filter( t => {
             return t._id !== id
@@ -183,32 +218,38 @@ class App extends React.Component {
         const transaction = this.state.budget.transactions.filter( t => {
             return t._id === id
         })[0]
+        const AAA = parseFloat(transaction.ammount)
+        console.log("AAA:", AAA)
+        var toAdd = 0
+        var toSub = 0
         var accountTo = findItemById(this.state.budget.accounts, transaction.accountIdTo)
         if ( accountTo !== undefined ) {
-            accountTo.balance -= parseFloat(transaction.ammount)
-            apis.updateAccountById(accountTo._id, accountTo).then( () => {
-                this.gAAs()
+            console.log("AT:", accountTo)
+            accountTo.balance = EM.sub(accountTo.balance, AAA)
+            toSub = AAA
+            apis.updateAccountById(accountTo._id, accountTo).then( r => {
+                // toSub = AAA
             })
         }
         var accountFrom = findItemById(this.state.budget.accounts, transaction.accountIdFrom)
         if ( accountFrom !== undefined) {
-            accountFrom.balance += parseFloat(transaction.ammount)
-            apis.updateAccountById(accountFrom._id, accountFrom).then( () => {
-                this.gAAs()
+            console.log("AF:", accountFrom)
+            toAdd = AAA
+            accountFrom.balance = EM.add(accountFrom.balance, AAA)
+            apis.updateAccountById(accountFrom._id, accountFrom).then( r => {
+                // toAdd = AAA
             })
         }
-        // console.log(transaction)
-        apis.deleteTransactionById(id).then( apiResponse => {
-            // console.log(apiResponse.data.data)
-        })
+        console.log(toAdd, toSub)
+        apis.deleteTransactionById(id)
         this.setState( prevState => {
             prevState.budget.transactions = ts
+            prevState.budget.total = EM.add(prevState.budget.total, toAdd)
+            prevState.budget.total = EM.sub(prevState.budget.total, toSub)
             return { prevState }
-        }, () => {
-            this.calculateEntries()
-            this.calculateTotal()
         })
     }
+
 
     deleteEntry = id => {
         const es = this.state.budget.entries.filter( e => {
@@ -226,19 +267,20 @@ class App extends React.Component {
         let data = {
             budgetId: this.state.budget._id
         }
-        fields.map( (field) => {
-            // console.log(e.target[field].value)
+        fields.forEach( (field) => {
+            
             data[field] = e.target[field].value
         })
         apis[actions](data).then( () => {
             this[postaction]()
         })
-        // console.log(data)
-        this.calculateTotal()
+        
+        
+        
         
     }
     deleteItem = (id, items, action) => {
-        // console.log(id, items, action)
+        
         const newItems = this.state.budget[items].filter( item => {
             return item._id !== id
         })
@@ -262,24 +304,48 @@ class App extends React.Component {
             ammount: e.target.ammount.value,
             cleared: true
         }
+        
+        if (data.accountIdFrom === "" && data.accountIdTo === "") {
+            throw new Error("Here be needed at least on account")
+        } else {
+            if (data.payeeId === "" && data.categoryId === "") {
+                throw new Error("Here be needed a payee or category, bre")
+            }
+        }
         var accountFrom = findItemById(this.state.budget.accounts, data.accountIdFrom)
+        var toAdd = 0
+        var toSub = 0
         if ( accountFrom !== undefined) { 
-            accountFrom.balance -= parseFloat(data.ammount)
+            accountFrom.balance = EM.sub(accountFrom.balance, parseFloat(data.ammount))
             apis.updateAccountById(accountFrom._id, accountFrom).then( () => {
-                this.gAAs()
+                
             })
+            toSub = accountFrom.balance
         }
         var accountTo = findItemById(this.state.budget.accounts, data.accountIdTo)
         if (accountTo !== undefined) {
-            accountTo.balance += parseFloat(data.ammount)
+            accountTo.balance = EM.add(accountTo.balance, parseFloat(data.ammount))
             apis.updateAccountById(accountTo._id, accountTo).then( () => {
-                this.gAAs()
+                
             })
+            toAdd = accountTo.balance
         }
-        apis.insertTransaction(data).then( () => {
-            this.gATs()
-            this.calculateEntries()
-            this.calculateTotal()
+        apis.insertTransaction(data).then( ( apiResponse ) => {
+            
+            
+            
+            
+            data._id = apiResponse.data.id
+            this.setState( p => {
+                p.budget.transactions.push(data)
+                if (toAdd.id !== null ) {
+                    p.budget.total = EM.add(p.budget.total, toAdd)
+                }
+                if (toSub.id !== null ) {
+                    p.budget.total = EM.sub(p.budget.total, toSub)
+                }
+                return( p )
+            })
         })
     }
 
@@ -300,19 +366,15 @@ class App extends React.Component {
     render() {
         return (
             
-                <div className="App">
-                    <Totallist total={this.state.budget.total} />
-                    <ul>
-                        {this.state.budget.accounts.length !== 0 && 
-                            <ListItems
-                                fields={["name", "balance"]}
-                                data={this.state.budget.accounts}
-                                deleteItem={this.deleteItem}
-                                items="accounts"
-                                apiCall="deleteAccountById"
-                            />
-                        }
-                    </ul>
+        <div className="App">
+            
+            <div className="total">
+                <TotalList total={this.state.budget.total} />
+            </div>
+
+            <div className="main">
+            <div className="accounts">
+                <div className="account-form">
                     <AddItemForm
                         action={ (e) => {
                             this.addItem(e, "insertAccount", ["name", "balance"], "gAAs")
@@ -320,10 +382,28 @@ class App extends React.Component {
                         fields={[
                                 { name: "name", ph: "Add Account" }, 
                                 { name: "balance", ph: "Balance" }
-                            ]}
+                            ]} 
                     />
-
-
+                </div>
+                <div className="accountslist">
+                    {this.state.budget.accounts.length !== 0 && 
+                        <ListItems
+                            fields={["name", "balance"]}
+                            data={this.state.budget.accounts}
+                            deleteItem={this.deleteItem}
+                            items="accounts"
+                            apiCall="deleteAccountById" />}
+                </div>
+            </div>
+            
+            <div className="categories">
+                <AddItemForm 
+                    action={ e => {
+                        this.addItem(e, "insertCategory", ["name"], "gACs")
+                    }}
+                    fields={[{name: "name", ph: "Add Category"}]}
+                />
+                <div className="">
                     <ul>
                         <ListItems
                             fields={["name"]}
@@ -333,13 +413,17 @@ class App extends React.Component {
                             apiCall="deleteCategoryById"
                         />
                     </ul>
-                    <AddItemForm 
-                        action={ e => {
-                            this.addItem(e, "insertCategory", ["name"], "gACs")
-                        }}
-                        fields={[{name: "name", ph: "Add Category"}]}
-                     />
-
+                </div>
+            </div>
+            
+            <div className="payees">
+                <AddItemForm
+                    action={ e => {
+                        this.addItem(e, "insertPayee", ["name"], "gAPs")
+                    }}
+                    fields={[{name: "name", ph: "Add Payee"}]}
+                />
+                <div className="">
                     <ul>
                         <ListItems
                             fields={["name"]}
@@ -349,38 +433,44 @@ class App extends React.Component {
                             apiCall="deletePayeeById"
                         />
                     </ul>
-                    <AddItemForm
-                        action={ e => {
-                            this.addItem(e, "insertPayee", ["name"], "gAPs")
-                        }}
-                        fields={[{name: "name", ph: "Add Payee"}]}
-                    />
-                    
+                </div>
+            </div>
+
+            <div className="">
+                <AddTransactionForm
+                    payees={this.state.budget.payees}
+                    accounts={this.state.budget.accounts}
+                    categories={this.state.budget.categories}
+                    addTransaction={this.addTransaction}
+                />
+                <div className="transactions">
                     <TransactionList 
                         ts={this.state.budget}
                         deleteTransaction={this.deleteTransaction}
                     />
-                    <AddTransactionForm
-                        payees={this.state.budget.payees}
-                        accounts={this.state.budget.accounts}
-                        categories={this.state.budget.categories}
-                        addTransaction={this.addTransaction}
-                    />
+                </div>
+            </div>
 
+            <div className="entries">
+                <AddEntryForm
+                    categories={this.state.budget.categories}
+                    addEntry={this.addEntry}
+                />
+                <div className="entry-list">
                     <EntryList
                         es={this.state.budget}
                         deleteEntry={this.deleteEntry}
                     />
-                    <AddEntryForm
-                        categories={this.state.budget.categories}
-                        addEntry={this.addEntry}
-                    />
                 </div>
+            </div>
+            </div>
+            
+        </div>
         )
     }
 }
 
-const Totallist = props => {
+const TotalList = props => {
     return (
         <div>Total: {props.total}</div>
     )
@@ -388,85 +478,102 @@ const Totallist = props => {
 
 const ListItems = props => {
     return (
-        props.data.map ( item => {
-            return (
-                <li key={item._id} id={item._id}>
-                    {/* { console.log(props.fields) } */}
-                    {props.fields.map( (field, index) => {
-                        return (
-                            <span key={index}>| {item[field]} |</span> 
-                        )
-                    })}
-                    <span onClick={ () => {
-                        props.deleteItem(item._id, props.items, props.apiCall)
-                    }}>del</span>
-                </li>
-            )
-        })
+        <table><tbody>
+            { props.data.map ( item => {
+                return (
+                    <tr className="account" key={item._id} id={item._id}>
+                        {props.fields.map( (field, index) => {
+                            return (
+                                <td key={index}>{item[field]}</td> 
+                            )
+                        })}
+                        <td>
+                            <button className="delete-button" onClick={ () => {
+                                props.deleteItem(item._id, props.items, props.apiCall)
+                            }}>del</button>
+                        </td>
+                    </tr>
+                )
+            }) }
+        </tbody></table>
     )
 }
 const AddItemForm = props => {
     return (
-        <div className="form">
-            <form onSubmit={props.action}>
-                {props.fields.map( (field, key) => {
-                    return (
+        <form onSubmit={props.action}>
+            {props.fields.map( (field, key) => {
+                return (
+                    <div key={key}>
                         <input key={key} name={field.name} placeholder={field.ph} />
-                    )
-                })}
-                <button>Submit</button>
-            </form>
-        </div>
+                    </div>
+                )
+            })}
+            <button>Submit</button>
+        </form>
     )
 }
 
 const TransactionList = props => {
-    // console.log(props.ts.transactions)
+    
+    const ts = props.ts.transactions.sort( (a, b) => {
+        return new Date(b.date) - new Date(a.date)
+    })
+    
     return (
-        props.ts.transactions.map( t => {
+        <table style={{width: "100%"}}><tbody>
+        { ts.map( t => {
             const payee = findItemById(props.ts.payees, t.payeeId)
-            // const payee = t.GET_BY_ID("payees", t.id)
+            
             const accountFrom = findItemById(props.ts.accounts, t.accountIdFrom)
             const accountTo = findItemById(props.ts.accounts, t.accountIdTo)
             const category = findItemById(props.ts.categories, t.categoryId)
             return (
-                <li key={t._id} id={t._id}>
-                    | <span>{t.date}</span> |
-                    | <span>{ (payee !== undefined) ? payee.name : "NO_PAYEE"}</span> |
-                    | <span>{ (accountFrom !== undefined) ? accountFrom.name : "NO_ACCOUNT_FROM"}</span> |
-                    | <span>{ (accountTo !== undefined) ? accountTo.name : "NO_ACCOUNT_TO"}</span> |
-                    | <span>{ (category !== undefined) ? category.name : "NO_CATEGORY"}</span> |
-                    | <span>{t.ammount}</span> |
-                    | <span onClick={ () => {
-                        props.deleteTransaction(t._id)
-                    }}>delete</span> |
-                </li>
+                <tr key={t._id} id={t._id}>
+                     <td>{t.date}</td> 
+                     <td>{ (payee !== undefined) ? payee.name : ""}</td> 
+                     <td>{ (accountFrom !== undefined) ? accountFrom.name : ""}</td> 
+                     <td>{ (accountTo !== undefined) ? accountTo.name : ""}</td> 
+                     <td>{ (category !== undefined) ? category.name : ""}</td> 
+                     <td>{t.ammount}</td> 
+                     <td>
+                         <button onClick={ () => {
+                            props.deleteTransaction(t._id)
+                            }}>delete
+                        </button> 
+                    </td>
+                </tr>
             )
-        })
+        }) }
+        </tbody></table>
     )
 }
 
 const EntryList = props => {
-    // console.log("EntryList:render()")
+    
     
     return (
-        props.es.entries.map( e => {
-            // console.log("E", e)
+        <table style={{width: "100%"}}>
+            {/* <th>
+                <td></td>
+            </th> */}
+        { props.es.entries.map( e => {
+            
             const category = findItemById(props.es.categories, e.categoryId)
             return (
-                <li key={e._id} id={e._id}>
-                    | <span>{e.year}</span> |
-                    | <span>{e.month}</span> |
-                    | <span>{ (category !== undefined) ? category.name : "NO_CATEGORY"}</span> |
-                    | <span>{e.activitySum}</span> |
-                    | <span>{e.available}</span> |
-                    | <span>{e.budgeted}</span> |
-                    | <span onClick={ () => {
+                <tr key={e._id} id={e._id}>
+                     <td>{e.year}</td> 
+                     <td>{e.month}</td> 
+                     <td>{ (category !== undefined) ? category.name : "NO_CATEGORY"}</td> 
+                     <td>{e.activitySum}</td> 
+                     <td>{e.available}</td> 
+                     <td>{e.budgeted}</td> 
+                     <td onClick={ () => {
                         props.deleteEntry(e._id)
-                    }}>delete</span> |
-                </li>
+                    }}>delete</td> 
+                </tr>
             )
-        })
+        })}
+        </table>
     )
 }
 
@@ -487,7 +594,7 @@ const AddTransactionForm = props => {
                     <option key="no-account-from"></option>
                     {props.accounts.map( account => {
                         return (
-                            <option key={account._id} value={account._id}>{account.name} - {account.balance}</option>
+                            <option key={account._id} value={account._id}>{account.name} ( {account.balance} )</option>
                         )
                     })}
                 </select>
@@ -495,7 +602,7 @@ const AddTransactionForm = props => {
                     <option key="no-account-to"></option>
                     {props.accounts.map( account => {
                         return (
-                            <option key={account._id} value={account._id}>{account.name} - {account.balance}</option>
+                            <option key={account._id} value={account._id}>{account.name} ( {account.balance} )</option>
                         )
                     })}
                 </select>
