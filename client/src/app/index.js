@@ -28,8 +28,7 @@ class App extends React.Component {
         const pa = window.location.pathname.split("/")
         this.state = {
             budget: {
-                _id: "5dfdfd026a572627cc560a0f",
-                // _id: "5df2468b0fbf700f3df20683",
+                _id: pa[1],
                 name: "",
                 accounts: [],
                 categories: [],
@@ -39,8 +38,8 @@ class App extends React.Component {
                 total: 0,
                 budgeted: 0,
                 activity: 0,
-                year: parseInt(pa[1], 10),
-                month: pa[2]
+                year: parseInt(pa[2], 10),
+                month: pa[3]
             },
         }
     }
@@ -198,16 +197,17 @@ class App extends React.Component {
     gAEs() {
         apis.getAllEntries(this.state.budget._id).then( apiResponse => {
             this.setState( prevState => {
-
-                apiResponse.data.data.forEach( e => {
-                    // console.log(e, this.state.budget)
-                    if ( e.year === this.state.budget.year &&
-                            e.month === this.state.budget.month ) {
-                            // return e
-                            prevState.budget.entries.push(e)
-                        }
-                        // return e
-                })
+                prevState.budget.entries = apiResponse.data.data
+                // moved this filtering to the display part
+                // apiResponse.data.data.forEach( e => {
+                //     // console.log(e, this.state.budget)
+                //     if ( e.year === this.state.budget.year &&
+                //             e.month === this.state.budget.month ) {
+                //             // return e
+                //             prevState.budget.entries.push(e)
+                //         }
+                //         // return e
+                // })
                 return( prevState )
             }, this.calculateEntries )
         }).then( () => {
@@ -289,6 +289,9 @@ class App extends React.Component {
         fields.forEach( (field) => {           
             data[field] = e.target[field].value
         })
+        if ( items === "accounts" ) {
+            data.balance = 0
+        }
         apis[actions](data).then( ( apiResponse ) => {
             data._id = apiResponse.data.id
             this.setState( prevState => {
@@ -397,6 +400,13 @@ class App extends React.Component {
     }
 
     render() {
+        const entries = []
+        this.state.budget.entries.forEach( e => {
+            if ( e.year === this.state.budget.year &&
+                e.month === this.state.budget.month ) {
+                entries.push(e)
+            }
+        })
         return (
         
         <Router>
@@ -447,7 +457,7 @@ class App extends React.Component {
                     }}
                     fields={[{name: "name", ph: "Add Category"}]}
                 />
-                <div className="">
+                <div className="categoriesList">
                     <ul>
                         <ListItems
                             fields={["name"]}
@@ -467,7 +477,7 @@ class App extends React.Component {
                     }}
                     fields={[{name: "name", ph: "Add Payee"}]}
                 />
-                <div className="">
+                <div className="payeesList">
                     <ul>
                         <ListItems
                             fields={["name"]}
@@ -503,7 +513,8 @@ class App extends React.Component {
                 />
                 <div className="entry-list">
                     <EntryList
-                        es={this.state.budget}
+                        es={entries}
+                        budget={this.state.budget.categories}
                         handleChange={this.handleEntryChange}
                         deleteEntry={this.deleteEntry}
                         onBlur={this.saveEntry}
@@ -596,13 +607,13 @@ const TransactionList = props => {
             <tbody>
         { ts.map( t => {
             const payee = findItemById(props.ts.payees, t.payeeId)
-            
             const accountFrom = findItemById(props.ts.accounts, t.accountIdFrom)
             const accountTo = findItemById(props.ts.accounts, t.accountIdTo)
             const category = findItemById(props.ts.categories, t.categoryId)
+            // console.log((new Date(t.date)).toLocaleDateString())
             return (
                 <tr key={t._id} id={t._id}>
-                     <td>{t.date}</td> 
+                     <td>{(new Date(t.date)).toLocaleDateString()}</td> 
                      <td>{ (payee !== undefined) ? payee.name : ""}</td> 
                      <td>{ (accountFrom !== undefined) ? accountFrom.name : ""}</td> 
                      <td>{ (accountTo !== undefined) ? accountTo.name : ""}</td> 
@@ -636,9 +647,9 @@ const EntryList = props => {
                 </tr>
             </thead>
             <tbody>
-        { props.es.entries.map( e => {
-            
-            const category = findItemById(props.es.categories, e.categoryId)
+        { props.es.map( e => {
+            console.log(props.es)
+            const category = findItemById(props.budget, e.categoryId)
             return (
                 <tr key={e._id} id={e._id}>
                      {/* <td>{e.year}</td> 

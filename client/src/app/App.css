@@ -5,7 +5,7 @@
     justify-content: space-around;
 }
 
-.total, .budget {
+.total, .budget, .currentState {
     text-align: center;
     font-size: 24px;
     padding: 10px;
@@ -29,10 +29,11 @@ form, .account-form {
     justify-content: space-around;
 }
   
-.accountslist {
+.accountslist, .categoriesList, .payeesList {
     display: flex;
     flex-direction: column;
     justify-content: space-between;
+    /* border: 1px solid blue; */
 }
 
 table {
@@ -41,16 +42,20 @@ table {
     padding: 5px;
     margin-right: 10px;
     /* justify-items: stretch; */
-    /* flex-shrink: 0 */
+    flex-shrink: 0;
+    /* border: 1px solid red; */
+    width: 100%;
 }
 
 tr, td {
-    flex-shrink: 0
+    flex-shrink: 0;
+    border-bottom: 1px solid black;
+    border-right: 1px solid black;
 }
 
 .currentState {
     display: flex;
     flex-direction: row;
-    border: 1px solid red;
+    /* border: 1px solid red; */
     justify-content: space-between;
 }

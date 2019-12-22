@@ -1,13 +1,16 @@
 #!/bin/bash
 # curl -H "Content-Type: application/json" -X POST -d '{ "name": "ynab" }' http://localhost:3001/api/budget
 
-#BID="5df32c54383dbe4ccf4c903e"
-#BID="5df2468b0fbf700f3df20683"
 #oldYNAB
 #BID="5dfdfd026a572627cc560a0f"
 # 5dfdfd026a572627cc560a0f
 #test
-BID="5dfdfd026a572627cc560a0f"
+#BID="5dfdfd026a572627cc560a0f"
+# production
+# BID="5dff8684ea01fa3257184a00"
+
+# alpha
+BID="5dff8684ea01fa3257184a00"
 
 HH="Content-Type: application/json"
 WR="curl -s"
@@ -33,7 +36,11 @@ ES=entries
 # wtf
 
 function add_budget {
-	${WR} -X POST -H "${HH}" -d "{ \"_id\": \"${BID}\", \"name\": \"test\" }" $BAPI/$B
+	${WR} -X POST -H "${HH}" -d "{ \"_id\": \"${BID}\", \"name\": \"${1}\" }" $BAPI/$B
+}
+
+function insert_budget {
+	${WR} -X POST -H "${HH}" -d "{ \"name\": \"${1}\" }" $BAPI/$B
 }
 
 function get_budgets {
@@ -43,6 +50,11 @@ function get_budgets {
 function get_budget {
 	$WR $BAPI/$B/$BID
 }
+
+function update_budget {
+	${WR} -X PUT -H "${HH}" -d "{ \"_id\": \"${BID}\", \"name\": \"${1}\" }" $BAPI/$B/$BID
+}
+
 
 function get_accounts {
 	eval $WR $BAPI/$AS/$BID

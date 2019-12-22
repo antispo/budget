@@ -27,4 +27,8 @@ do
 done < register
 IFS=$OLDIFS
 
-while read LINE; do NAME=$(echo "${LINE}" | sed 's/\t/,/' | cut -d, -f1); AMMOUNT=$(echo "${LINE}" | sed 's/\t/,/' | cut -d, -f2) ; CID=$(get_categories | jq | grep -C 2 "$NAME\"" | grep id | cut -d: -f2 | sed -e 's/ "//' -e 's/",//'); echo $WR -H \"${HH}\" -d "'{ \"budgetId\": \"5dfdfd026a572627cc560a0f\", \"year\": \"2019\", \"month\": \"12\", \"categoryId\":\"${CID}\", \"budgeted\": \"${AMMOUNT}\" }'" $BAPI/$E ; done < entries
+while read LINE; 
+do NAME=$(echo "${LINE}" | sed 's/\t/,/' | cut -d, -f1); AMMOUNT=$(echo "${LINE}" | sed 's/\t/,/' | cut -d, -f2) ; \
+    CID=$(get_categories | jq | grep -C 2 "$NAME\"" | grep id | cut -d: -f2 | sed -e 's/ "//' -e 's/",//'); \
+    echo $WR -H \"${HH}\" -d "'{ \"budgetId\": \"5dfdfd026a572627cc560a0f\", \"year\": \"2019\", \"month\": \"12\", \"categoryId\":\"${CID}\", \"budgeted\": \"${AMMOUNT}\" }'" $BAPI/$E; 
+done < entries
