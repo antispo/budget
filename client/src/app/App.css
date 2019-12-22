@@ -5,9 +5,10 @@
     justify-content: space-around;
 }
 
-.total {
+.total, .budget {
     text-align: center;
     font-size: 24px;
+    padding: 10px;
 }
 
 .accounts, .categories, .payees {
@@ -45,4 +46,11 @@ table {
 
 tr, td {
     flex-shrink: 0
+}
+
+.currentState {
+    display: flex;
+    flex-direction: row;
+    border: 1px solid red;
+    justify-content: space-between;
 }

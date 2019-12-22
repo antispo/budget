@@ -18,11 +18,13 @@ const findItemById = (where, id) => {
 }
 
 class App extends React.Component {
+
     constructor() {
         super()
         this.state = {
             budget: {
                 _id: "5dfdfd026a572627cc560a0f",
+                // _id: "5df2468b0fbf700f3df20683",
                 name: "",
                 accounts: [],
                 categories: [],
@@ -33,6 +35,7 @@ class App extends React.Component {
             },
         }
     }
+
     componentDidMount() {
         apis.getBudgetById(this.state.budget._id).then( apiResponse => {
             this.setState( prevState => {  
@@ -40,8 +43,11 @@ class App extends React.Component {
                 
                 return { prevState }
             }, () => {
-                
                 this.gAAs()
+                this.gACs()
+                this.gAPs()
+                this.gATs()
+                this.gAEs()
             })
         })
     }
@@ -53,51 +59,43 @@ class App extends React.Component {
                 return { prevState }
             })
         }).then( () => {
-            
-            
-            this.gACs()
         }).catch( e => {
-            
         })
     }
 
     gACs() {
+        console.log("gACs()")
         apis.getAllCategories(this.state.budget._id).then ( apiResponse => {
             this.setState ( prevState => {
                 prevState.budget.categories = apiResponse.data.data
                 return { prevState }
             })
         }).then( () => {
-            this.gAPs()
         }).catch( e => {
-            
         })
     }
+
     gAPs() {
         apis.getAllPayees(this.state.budget._id).then( apiResponse => {
             this.setState( prevState => {
                 prevState.budget.payees = apiResponse.data.data
                 return { prevState }
             })
-        }).then( () => {
-            
-            this.gATs()
-            
+        }).then( () => {           
         }).catch( e => {
             
         })
     }
-    gATs() {
-        
+
+    gATs() { 
         apis.getAllTransactions(this.state.budget._id).then( apiResponse => {
             this.setState( prevState => {
                 prevState.budget.transactions = apiResponse.data.data
                 
                 return { prevState }
             }, () => {
-                this.calculateEntries()
                 this.processTransactions()
-                this.calculateTotal()
+                
             })
         }).then( () => {
             
@@ -105,9 +103,12 @@ class App extends React.Component {
             
         })
     }
+
     calculateTotal() {
+        
         var total = 0
         this.state.budget.accounts.forEach( a => {
+            // console.log("calculateTotal", a.balance)
             total = EM.add(total, a.balance)
         })
         this.setState( p => {
@@ -118,70 +119,83 @@ class App extends React.Component {
     }
 
     processTransactions() {
+        const accounts = this.state.budget.accounts
         this.state.budget.transactions.forEach( t => {
             if (t.accountIdFrom !== "") {
-                this.setState( p => {
-                    p.budget.accounts.forEach( a => {
-                        if ( t.accountIdFrom === a._id ) {
-                            
-                            a.balance = EM.sub(a.balance, t.ammount)
-                            
-                        }
-                    })
-                    return( p )
-                })
+                accounts.forEach( a => {
+                    if ( t.accountIdFrom === a._id ) {
+                        
+                        a.balance = EM.sub(a.balance, t.ammount)
+                        
+                    }
+                })                
             }
             if (t.accountIdTo !== "") {
-                this.setState( p => {
-                    p.budget.accounts.forEach( a => {
-                        if ( t.accountIdTo === a._id ) {
-                            a.balance = EM.add(a.balance, t.ammount)
-                            
-                        }
-                    })
-                    return( p )
-                }, () => {
-                    this.calculateTotal()
+                accounts.forEach( a => {
+                    if ( t.accountIdTo === a._id ) {
+                        a.balance = EM.add(a.balance, t.ammount)
+                        
+                    }
                 })
             }
         })
+        console.log(accounts)
+        this.setState( prevState => {
+            prevState.budget.accounts = accounts
+            return prevState
+        }, () => {
+            this.calculateTotal()
+        })
     }
+
     calculateEntries() {
         const entries = this.state.budget.entries
         const transactions = this.state.budget.transactions
+
+        var budgeted = 0
+        var activity = 0
+        var available = 0
         
         entries.forEach( entry => {
+            budgeted = EM.add(budgeted, entry.budgeted)
             let activitySum = 0
             transactions.forEach( t => {
-                
-                
                 if ( t.categoryId === entry.categoryId ) {
-                    activitySum += t.ammount
+                    if (t.accountIdFrom !== "" ) {
+                        activitySum = EM.add(activitySum, t.ammount)
+                    }
+                    if ( t.accountIdTo !== "" ) {
+                        activitySum = EM.sub(activitySum, t.ammount)
+                    }
                 }
-                
             })
             
             entry['activitySum'] = activitySum
             entry['available'] = entry.budgeted - activitySum
+
+            activity = EM.add(activity, entry.activitySum)
+            available = EM.add(available, entry.available)
         })
         this.setState( p => {
             p.budget.entries = entries
+            p.budget.budgeted = budgeted
+            p.budget.activity = activity
+            p.budget.available = available
+            p.budget.currentState = p.budget.total - budgeted
             return( p )
         }, () => {
             
         })
     }
+
     gAEs() {
         apis.getAllEntries(this.state.budget._id).then( apiResponse => {
             this.setState( prevState => {
                 prevState.budget.entries = apiResponse.data.data
-                
-                
-                
                 return( prevState )
-            })
+            }, this.calculateEntries )
         }).then( () => {
-            this.calculateEntries()
+            
         }).catch( e => {
             
         })
@@ -198,18 +212,6 @@ class App extends React.Component {
             return { prevState }
         })
     }
-    deletePayee = (id) => {
-        const newPayees = this.state.budget.payees.filter( (value) => {
-            return value._id !== id
-        })
-        apis.deletePayeeById(id)
-        this.setState( prevState => {
-            
-            prevState.budget.payees = newPayees
-            return { prevState }
-        })
-    }
-
 
     deleteTransaction = id => {
         const ts = this.state.budget.transactions.filter( t => {
@@ -219,12 +221,12 @@ class App extends React.Component {
             return t._id === id
         })[0]
         const AAA = parseFloat(transaction.ammount)
-        console.log("AAA:", AAA)
+        // console.log("AAA:", AAA)
         var toAdd = 0
         var toSub = 0
         var accountTo = findItemById(this.state.budget.accounts, transaction.accountIdTo)
         if ( accountTo !== undefined ) {
-            console.log("AT:", accountTo)
+            // console.log("AT:", accountTo)
             accountTo.balance = EM.sub(accountTo.balance, AAA)
             toSub = AAA
             apis.updateAccountById(accountTo._id, accountTo).then( r => {
@@ -233,21 +235,22 @@ class App extends React.Component {
         }
         var accountFrom = findItemById(this.state.budget.accounts, transaction.accountIdFrom)
         if ( accountFrom !== undefined) {
-            console.log("AF:", accountFrom)
+            // console.log("AF:", accountFrom)
             toAdd = AAA
             accountFrom.balance = EM.add(accountFrom.balance, AAA)
             apis.updateAccountById(accountFrom._id, accountFrom).then( r => {
                 // toAdd = AAA
             })
         }
-        console.log(toAdd, toSub)
+        // console.log(toAdd, toSub)
         apis.deleteTransactionById(id)
         this.setState( prevState => {
             prevState.budget.transactions = ts
             prevState.budget.total = EM.add(prevState.budget.total, toAdd)
             prevState.budget.total = EM.sub(prevState.budget.total, toSub)
+            // console.log(prevState.budget.total)
             return { prevState }
-        })
+        }, this.calculateEntries)
     }
 
 
@@ -262,25 +265,24 @@ class App extends React.Component {
         })
     }
     
-    addItem = (e, actions, fields, postaction) => {
+    addItem = (e, actions, fields, items) => {
         e.preventDefault()
         let data = {
             budgetId: this.state.budget._id
         }
-        fields.forEach( (field) => {
-            
+        fields.forEach( (field) => {           
             data[field] = e.target[field].value
         })
-        apis[actions](data).then( () => {
-            this[postaction]()
+        apis[actions](data).then( ( apiResponse ) => {
+            data._id = apiResponse.data.id
+            this.setState( prevState => {
+                prevState.budget[items].push(data)
+                return ( prevState )
+            })
         })
-        
-        
-        
-        
     }
+
     deleteItem = (id, items, action) => {
-        
         const newItems = this.state.budget[items].filter( item => {
             return item._id !== id
         })
@@ -288,10 +290,9 @@ class App extends React.Component {
         this.setState( prevState => {
             prevState.budget[items] = newItems
             return { prevState }
-        }, () => {
-            
         })
     }
+
     addTransaction = e => {
         e.preventDefault()
         const data = {
@@ -312,6 +313,7 @@ class App extends React.Component {
                 throw new Error("Here be needed a payee or category, bre")
             }
         }
+
         var accountFrom = findItemById(this.state.budget.accounts, data.accountIdFrom)
         var toAdd = 0
         var toSub = 0
@@ -320,7 +322,7 @@ class App extends React.Component {
             apis.updateAccountById(accountFrom._id, accountFrom).then( () => {
                 
             })
-            toSub = accountFrom.balance
+            toSub = data.ammount
         }
         var accountTo = findItemById(this.state.budget.accounts, data.accountIdTo)
         if (accountTo !== undefined) {
@@ -328,13 +330,9 @@ class App extends React.Component {
             apis.updateAccountById(accountTo._id, accountTo).then( () => {
                 
             })
-            toAdd = accountTo.balance
+            toAdd = data.ammount
         }
-        apis.insertTransaction(data).then( ( apiResponse ) => {
-            
-            
-            
-            
+        apis.insertTransaction(data).then( ( apiResponse ) => {           
             data._id = apiResponse.data.id
             this.setState( p => {
                 p.budget.transactions.push(data)
@@ -345,6 +343,8 @@ class App extends React.Component {
                     p.budget.total = EM.sub(p.budget.total, toSub)
                 }
                 return( p )
+            }, () => {
+                this.calculateEntries()
             })
         })
     }
@@ -358,8 +358,12 @@ class App extends React.Component {
             categoryId: e.target.category.value,
             budgeted: e.target.budgeted.value,
         }
-        apis.insertEntry(data).then( () => {
-            this.gAEs()
+        apis.insertEntry(data).then( ( apiResponse ) => {
+            data._id = apiResponse.data.id
+            this.setState( prevState => {
+                prevState.budget.entries.push(data)
+                return( prevState )
+            }, this.calculateEntries)
         })
     }
 
@@ -367,9 +371,19 @@ class App extends React.Component {
         return (
             
         <div className="App">
-            
-            <div className="total">
-                <TotalList total={this.state.budget.total} />
+
+            <div className="currentState">    
+                <div className="total">
+                    <TotalList budget={this.state.budget} />
+                </div>
+
+                <div className="currentState">
+                    <CurrentState budget={this.state.budget} />
+                </div>
+
+                <div className="budget">
+                    <BudgetList budget={this.state.budget} />
+                </div>
             </div>
 
             <div className="main">
@@ -377,7 +391,7 @@ class App extends React.Component {
                 <div className="account-form">
                     <AddItemForm
                         action={ (e) => {
-                            this.addItem(e, "insertAccount", ["name", "balance"], "gAAs")
+                            this.addItem(e, "insertAccount", ["name", "balance"], "accounts")
                         }}
                         fields={[
                                 { name: "name", ph: "Add Account" }, 
@@ -399,7 +413,7 @@ class App extends React.Component {
             <div className="categories">
                 <AddItemForm 
                     action={ e => {
-                        this.addItem(e, "insertCategory", ["name"], "gACs")
+                        this.addItem(e, "insertCategory", ["name"], "categories")
                     }}
                     fields={[{name: "name", ph: "Add Category"}]}
                 />
@@ -419,7 +433,7 @@ class App extends React.Component {
             <div className="payees">
                 <AddItemForm
                     action={ e => {
-                        this.addItem(e, "insertPayee", ["name"], "gAPs")
+                        this.addItem(e, "insertPayee", ["name"], "payees")
                     }}
                     fields={[{name: "name", ph: "Add Payee"}]}
                 />
@@ -472,30 +486,44 @@ class App extends React.Component {
 
 const TotalList = props => {
     return (
-        <div>Total: {props.total}</div>
+        <div>{props.budget._id} | {props.budget.name} | {props.budget.total}</div>
+    )
+}
+
+const BudgetList = props => {
+    return (
+        <div>{props.budget.budgeted} | {props.budget.activity} | <span style={{color: "green", fontWeight: "bold"}}>{props.budget.available}</span></div>
+    )
+}
+
+const CurrentState = props => {
+    return (
+        <div>To Be Budgeted: {props.budget.currentState}</div>
     )
 }
 
 const ListItems = props => {
     return (
-        <table><tbody>
-            { props.data.map ( item => {
-                return (
-                    <tr className="account" key={item._id} id={item._id}>
-                        {props.fields.map( (field, index) => {
-                            return (
-                                <td key={index}>{item[field]}</td> 
-                            )
-                        })}
-                        <td>
-                            <button className="delete-button" onClick={ () => {
-                                props.deleteItem(item._id, props.items, props.apiCall)
-                            }}>del</button>
-                        </td>
-                    </tr>
-                )
-            }) }
-        </tbody></table>
+        <table>
+            <tbody>
+                { props.data.map ( item => {
+                    return (
+                        <tr className="account" key={item._id} id={item._id}>
+                            {props.fields.map( (field, index) => {
+                                return (
+                                    <td key={index}>{item[field]}</td> 
+                                )
+                            })}
+                            <td>
+                                <button className="delete-button" onClick={ () => {
+                                    props.deleteItem(item._id, props.items, props.apiCall)
+                                }}>del</button>
+                            </td>
+                        </tr>
+                    )
+                }) }
+            </tbody>
+        </table>
     )
 }
 const AddItemForm = props => {
@@ -520,7 +548,18 @@ const TransactionList = props => {
     })
     
     return (
-        <table style={{width: "100%"}}><tbody>
+        <table style={{width: "100%"}}>
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Payee</th>
+                    <th>From</th>
+                    <th>To</th>
+                    <th>Category</th>
+                    <th>Ammount</th>
+                </tr>
+            </thead>
+            <tbody>
         { ts.map( t => {
             const payee = findItemById(props.ts.payees, t.payeeId)
             
@@ -548,14 +587,20 @@ const TransactionList = props => {
     )
 }
 
-const EntryList = props => {
-    
-    
+const EntryList = props => {  
     return (
         <table style={{width: "100%"}}>
-            {/* <th>
-                <td></td>
-            </th> */}
+            <thead>
+                <tr>
+                    <th>Year</th>
+                    <th>Month</th>
+                    <th>Category</th>
+                    <th>Activity</th>
+                    <th>Available</th>
+                    <th>Budgeted</th>
+                </tr>
+            </thead>
+            <tbody>
         { props.es.entries.map( e => {
             
             const category = findItemById(props.es.categories, e.categoryId)
@@ -567,13 +612,16 @@ const EntryList = props => {
                      <td>{e.activitySum}</td> 
                      <td>{e.available}</td> 
                      <td>{e.budgeted}</td> 
-                     <td onClick={ () => {
-                        props.deleteEntry(e._id)
-                    }}>delete</td> 
+                     <td>
+                        <button onClick={ () => {
+                            props.deleteEntry(e._id)
+                        }}>delete
+                        </button>
+                    </td> 
                 </tr>
             )
         })}
-        </table>
+        </tbody></table>
     )
 }
 

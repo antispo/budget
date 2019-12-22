@@ -4,6 +4,9 @@
 #BID="5df32c54383dbe4ccf4c903e"
 #BID="5df2468b0fbf700f3df20683"
 #oldYNAB
+#BID="5dfdfd026a572627cc560a0f"
+# 5dfdfd026a572627cc560a0f
+#test
 BID="5dfdfd026a572627cc560a0f"
 
 HH="Content-Type: application/json"
@@ -22,8 +25,15 @@ TS=${T}s
 E=entry
 ES=entries
 
+# wtf
+# addaccount
+# zeroooo
+# zero!?!??!!
+# refresh
+# wtf
+
 function add_budget {
-	"${WR}" -X POST -H "${HH}" -d "{ \"name\": \"oldYNAB\" }" $BAPI/$B
+	${WR} -X POST -H "${HH}" -d "{ \"_id\": \"${BID}\", \"name\": \"test\" }" $BAPI/$B
 }
 
 function get_budgets {

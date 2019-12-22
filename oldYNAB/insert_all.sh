@@ -2,7 +2,7 @@
 
 source 'requests.sh'
 
-echo 'db.accounts.deleteMany({}); db.payees.deleteMany({}); db.categories.deleteMany({}); db.transactions.deleteMany({});' | mongo oldYNAB
+echo 'db.accounts.deleteMany({}); db.payees.deleteMany({}); db.categories.deleteMany({}); db.transactions.deleteMany({}); db.entries.deleteMany({});' | mongo test
 
 ./insert_payees.sh
 ./insert_categories.sh
