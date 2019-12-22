@@ -49,7 +49,7 @@ function get_accounts {
 }
 
 function add_account {
-	$WR -X POST -H "${HH}" -d "{ \"budgetId\": \"${BID}\", \"name\": \"${1}\", \"balance\": 0 }" $BAPI/$A/
+	$WR -X POST -H "${HH}" -d "{ \"budgetId\": \"${BID}\", \"name\": \"${1}\" }" $BAPI/$A/
 }
 
 function delete_account {

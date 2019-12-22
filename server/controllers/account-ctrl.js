@@ -52,7 +52,7 @@ updateAccount = async (req, res) => {
         }
         account.dudgetId = body.budgetId
         account.name = body.name
-        account.balance = body.balance
+
         account
             .save()
             .then(() => {
