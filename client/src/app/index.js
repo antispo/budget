@@ -428,6 +428,7 @@ class App extends React.Component {
             </div>
 
             <div className="main">
+                <idv className="left">
             <div className="accounts">
                 <div className="account-form">
                     <AddItemForm
@@ -489,40 +490,46 @@ class App extends React.Component {
                     </ul>
                 </div>
             </div>
+            </idv>
 
-            <div className="">
-                <AddTransactionForm
-                    payees={this.state.budget.payees}
-                    accounts={this.state.budget.accounts}
-                    categories={this.state.budget.categories}
-                    addTransaction={this.addTransaction}
-                />
-                <div className="transactions">
-                    <TransactionList 
-                        ts={this.state.budget}
-                        deleteTransaction={this.deleteTransaction}
-                    />
-                </div>
-            </div>
+            <div className="right">
 
-            <Route>
-            <div className="entries">
-                <AddEntryForm
-                    categories={this.state.budget.categories}
-                    addEntry={this.addEntry}
-                />
-                <div className="entry-list">
-                    <EntryList
-                        es={entries}
-                        budget={this.state.budget.categories}
-                        handleChange={this.handleEntryChange}
-                        deleteEntry={this.deleteEntry}
-                        onBlur={this.saveEntry}
+                <div className="">
+                    <AddTransactionForm
+                        payees={this.state.budget.payees}
+                        accounts={this.state.budget.accounts}
+                        categories={this.state.budget.categories}
+                        addTransaction={this.addTransaction}
                     />
+                    <div className="transactions">
+                        <TransactionList 
+                            ts={this.state.budget}
+                            deleteTransaction={this.deleteTransaction}
+                        />
+                    </div>
                 </div>
+
+                <Route>
+                <div className="entries">
+                    <AddEntryForm
+                        categories={this.state.budget.categories}
+                        addEntry={this.addEntry}
+                    />
+                    <div className="entry-list">
+                        <EntryList
+                            es={entries}
+                            budget={this.state.budget.categories}
+                            handleChange={this.handleEntryChange}
+                            deleteEntry={this.deleteEntry}
+                            onBlur={this.saveEntry}
+                        />
+                    </div>
+
+                </div>
+            
+                </Route>
             </div>
-            </Route>
-        </div>
+            </div>
         </div>
         </Router>
         )
