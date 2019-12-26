@@ -62,20 +62,20 @@ class App extends React.Component {
         })
     }
 
-    onChange = (id, name) => {
+    onChange = (id, name, what) => {
         // console.log(id, name)
         this.setState( prevState => {
-            prevState.budget.accounts.forEach( a => {
-                if (a._id === id ) {
-                    a.name = name
+            prevState.budget[what].forEach( w => {
+                if (w._id === id ) {
+                    w.name = name
                 }
             })
             return prevState
         })
     }
-    saveAccount = (id, name) => {
+    saveItemToDb = (id, name, action) => {
         //console.log(id, name)
-        apis.updateAccountById(id, { budgetId: this.state.budget._id, name: name })
+        apis[action](id, { budgetId: this.state.budget._id, name: name })
             .then( apiResponse => {
                 // console.log(apiResponse)
             })
@@ -92,7 +92,8 @@ class App extends React.Component {
                     a.balance = 0
                     a.showPopup = false
                     a.onChange = this.onChange
-                    a.saveAccount = this.saveAccount
+                    a.saveAccount = this.saveItemToDb
+                    a.editAction = "updateAccountById"
                 })
                 return { prevState }
             })
@@ -106,6 +107,11 @@ class App extends React.Component {
         apis.getAllCategories(this.state.budget._id).then ( apiResponse => {
             this.setState ( prevState => {
                 prevState.budget.categories = apiResponse.data.data
+                prevState.budget.categories.forEach( c => {
+                    c.onChange = this.onChange
+                    c.saveAccount = this.saveItemToDb
+                    c.editAction = "updateCategoryById"
+                })
                 return { prevState }
             })
         }).then( () => {
@@ -117,6 +123,11 @@ class App extends React.Component {
         apis.getAllPayees(this.state.budget._id).then( apiResponse => {
             this.setState( prevState => {
                 prevState.budget.payees = apiResponse.data.data
+                prevState.budget.payees.forEach( p => {
+                    p.onChange = this.onChange
+                    p.saveAccount = this.saveItemToDb
+                    p.editAction = "updatePayeeById"
+                })
                 return { prevState }
             })
         }).then( () => {           
@@ -491,8 +502,8 @@ class App extends React.Component {
                 />
                 <div className="categoriesList">
                     <ul>
-                        <ListItems
-                        // <AccountsList
+                        {/* <ListItems */}
+                        <AccountsList
                             fields={["name"]}
                             data={this.state.budget.categories}
                             deleteItem={this.deleteItem}
@@ -514,7 +525,7 @@ class App extends React.Component {
                 />
                 <div className="payeesList">
                     <ul>
-                        <ListItems
+                        <AccountsList
                             fields={["name"]}
                             data={this.state.budget.payees}
                             deleteItem={this.deleteItem}
@@ -670,10 +681,11 @@ class PopupAccount extends React.Component {
         visible: false
     }
     handleChange(id, name) {
-        this.props.item.onChange(id, name)
+        console.log(this.props.items)
+        this.props.item.onChange(id, name, this.props.items)
     }
     handleClose = () => {
-        this.props.item.saveAccount(this.props.item._id, this.props.item.name)
+        this.props.item.saveAccount(this.props.item._id, this.props.item.name, this.props.item.editAction)
         this.setState({visible: false})
     }
     handleShow = () => {
@@ -744,7 +756,7 @@ class AccountsList extends React.Component {
                                 <PopupAccount
                                     item={item}
                                     deleteItem={this.props.deleteItem}
-                                    items="accounts"
+                                    items={this.props.items}
                                     action="deleteAccountById"
                                 />
                             </td>                            
