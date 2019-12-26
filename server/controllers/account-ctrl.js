@@ -50,7 +50,7 @@ updateAccount = async (req, res) => {
                 message: 'Account not found!',
             })
         }
-        account.dudgetId = body.budgetId
+        account.budgetId = body.budgetId
         account.name = body.name
 
         account

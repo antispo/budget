@@ -4,13 +4,14 @@ import React from 'react'
 
 import { BrowserRouter as Router, Route } from 'react-router-dom'
 
+import Modal from 'react-bootstrap/Modal'
+import Button from 'react-bootstrap/Button'
+
 import './App.css';
 
 const EM = require('exact-math');
 
 import "bootstrap/dist/css/bootstrap.min.css"
-
-
 
 import apis from '../api'
 
@@ -27,6 +28,7 @@ class App extends React.Component {
         super()
         const pa = window.location.pathname.split("/")
         this.state = {
+            showAccountForm: false,
             budget: {
                 _id: pa[1],
                 name: "",
@@ -68,20 +70,20 @@ class App extends React.Component {
                     a.name = name
                 }
             })
+            return prevState
         })
     }
     saveAccount = (id, name) => {
-        apis.updateAccountById(id, { name: name })
-        // this.state.budget.accounts.forEach( a => {
-        //     if (a._id === id) {
-        //         console.log(name === a.name)
-        //         if (a.name !== name) {
-        //             // this is allways true
-        //         }
-        //     }
-        // })
-    }
+        //console.log(id, name)
+        apis.updateAccountById(id, { budgetId: this.state.budget._id, name: name })
+            .then( apiResponse => {
+                // console.log(apiResponse)
+            })
+            .catch( e => {
+                // console.log(e)
+            })
 
+    }
     gAAs() {
         apis.getAllAccounts(this.state.budget._id).then( apiResponse => {
             this.setState( prevState => {
@@ -311,8 +313,9 @@ class App extends React.Component {
         let data = {
             budgetId: this.state.budget._id
         }
-        fields.forEach( (field) => {           
-            data[field] = e.target[field].value
+        fields.forEach( (field) => {
+            console.log(field) 
+            data[field.name] = e.target[field.name].value
         })
         if ( items === "accounts" ) {
             data.balance = 0
@@ -327,6 +330,7 @@ class App extends React.Component {
     }
 
     deleteItem = (id, items, action) => {
+        // console.log("start delete item", this.state.budget.accounts)
         const newItems = this.state.budget[items].filter( item => {
             return item._id !== id
         })
@@ -335,6 +339,7 @@ class App extends React.Component {
             prevState.budget[items] = newItems
             return { prevState }
         })
+        // console.log("End delete item", this.state.budget.accounts)
     }
 
     addTransaction = e => {
@@ -436,36 +441,34 @@ class App extends React.Component {
         
         <Router>
             
-        <div className="App">
+        <div className="container-fluid">
 
-            <div className="currentState">    
-                <div className="total">
+            <div className="row text-primary text-center alin-center">    
+                <div className="col-4">
                     <TotalList budget={this.state.budget} />
                 </div>
 
-                <div className="currentState">
+                <div className="col-4">
                     <CurrentState budget={this.state.budget} />
                 </div>
 
-                <div className="budget">
+                <div className="col-4">
                     <BudgetList budget={this.state.budget} />
                 </div>
             </div>
 
-            <div className="main">
-                <div className="left">
+            <div className="row">
+                <div className="col-2">
             <div className="accounts">
-                <div className="account-form">
-                    <AddItemForm
-                        action={ (e) => {
-                            this.addItem(e, "insertAccount", ["name"], "accounts")
-                        }}
-                        fields={[
-                                { name: "name", ph: "Add Account" }, 
-                            ]} 
-                    />
-                </div>
                 <div className="accountslist">
+                    <ShowAddForm
+                        addItem={this.addItem}
+                        action="insertAccount"
+                        what="accounts"
+                        fields={[
+                            { name: "name", ph: "Add Account" }, 
+                        ]}
+                    />
                     {this.state.budget.accounts.length !== 0 && 
                         <AccountsList
                             fields={["name", "balance"]}
@@ -474,18 +477,22 @@ class App extends React.Component {
                             items="accounts"
                             apiCall="deleteAccountById" />}
                 </div>
+                
             </div>
             
             <div className="categories">
-                <AddItemForm 
-                    action={ e => {
-                        this.addItem(e, "insertCategory", ["name"], "categories")
-                    }}
-                    fields={[{name: "name", ph: "Add Category"}]}
+                <ShowAddForm
+                    addItem={this.addItem}
+                    action="insertCategory"
+                    what="categories"
+                    fields={[
+                        { name: "name", ph: "Add Category" }, 
+                    ]}
                 />
                 <div className="categoriesList">
                     <ul>
                         <ListItems
+                        // <AccountsList
                             fields={["name"]}
                             data={this.state.budget.categories}
                             deleteItem={this.deleteItem}
@@ -497,11 +504,13 @@ class App extends React.Component {
             </div>
             
             <div className="payees">
-                <AddItemForm
-                    action={ e => {
-                        this.addItem(e, "insertPayee", ["name"], "payees")
-                    }}
-                    fields={[{name: "name", ph: "Add Payee"}]}
+                <ShowAddForm
+                    addItem={this.addItem}
+                    action="insertPayee"
+                    what="payees"
+                    fields={[
+                        { name: "name", ph: "Add Payee" }, 
+                    ]}
                 />
                 <div className="payeesList">
                     <ul>
@@ -517,7 +526,7 @@ class App extends React.Component {
             </div>
             </div>
 
-            <div className="right">
+            <div className="col-10">
 
                 <div className="">
                     <AddTransactionForm
@@ -561,6 +570,57 @@ class App extends React.Component {
     }
 }
 
+
+class ShowAddForm extends React.Component {
+    constructor(props) {
+        super(props)
+        this.state = {
+            visible: props.visible
+        }
+    }
+    showAddForm = () => {
+        this.setState({visible: true})
+    }
+    handleClose = () => {
+        this.setState({visible: false})
+    }
+    render() {
+        return (
+            <div>
+                <button className="btn btn-secondary btn-block" onClick={this.showAddForm}>Add</button>
+                <Modal show={this.state.visible} onHide={this.handleClose}>
+                    <Modal.Header closeButton>
+                        <Modal.Title>{this.props.fields[0].ph}</Modal.Title>
+                    </Modal.Header>
+                    <Modal.Body>
+                        <div className="account-form">
+                            <AddItemForm
+                                action={ (e) => {
+                                    this.props.addItem(
+                                        e,
+                                        this.props.action, 
+                                        this.props.fields, 
+                                        this.props.what
+                                    )
+                                    this.handleClose()
+                                }}
+                                fields={this.props.fields} 
+                            />
+                        </div>
+                    </Modal.Body>
+                    <Modal.Footer>
+                        <Button onClick={this.handleClose}>
+                            Close
+                        </Button>
+                    </Modal.Footer>
+                </Modal>
+            </div>
+        )
+    }
+}
+
+
+
 const TotalList = props => {
     return (
         <div>{props.budget._id} | {props.budget.name} | {props.budget.total}</div>
@@ -581,20 +641,20 @@ const CurrentState = props => {
 
 const ListItems = props => {
     return (
-        <table>
+        <table  className="table table-striped">
             <tbody>
                 { props.data.map ( item => {
                     return (
-                        <tr className="account" key={item._id} id={item._id}>
+                        <tr className="align-middle" key={item._id} id={item._id}>
                             {props.fields.map( (field, index) => {
                                 return (
                                     <td key={index}>{item[field]}</td> 
                                 )
                             })}
                             <td>
-                                <button className="delete-button" onClick={ () => {
+                                <button className="btn btn-danger" onClick={ () => {
                                     props.deleteItem(item._id, props.items, props.apiCall)
-                                }}>del</button>
+                                }}>x</button>
                             </td>
                         </tr>
                     )
@@ -606,68 +666,87 @@ const ListItems = props => {
 
 
 class PopupAccount extends React.Component {
-    constructor(props) {
-        // console.log(props)
-        super(props)
-        this.state = {
-            _id: props.item._id,
-            name: props.item.name,
-            balance: props.item.balance
-        }
+    state = {
+        visible: false
     }
     handleChange(id, name) {
-        this.setState({ name: name })
         this.props.item.onChange(id, name)
     }
-    componentWillUnmount() {
-        // console.log(this.state._id, this.state.name)
-        this.props.item.saveAccount(this.state._id, this.state.name)
+    handleClose = () => {
+        this.props.item.saveAccount(this.props.item._id, this.props.item.name)
+        this.setState({visible: false})
     }
+    handleShow = () => {
+        this.setState({visible: true})
+    }
+    deleteItem = (id) => {
+        this.props.deleteItem(id, this.props.items, this.props.action)
+        this.setState({visible: false})
+    }
+    
     render() {
         return (
-            <div className="popupItem">
-                <input type="text" value={this.state.name} onChange={ e => {
-                    this.handleChange(this.state._id, e.target.value)
-                }} />
+            <div>
+                <button
+                    className="btn btn-primary"
+                    onClick={this.handleShow}
+                >
+                    Edit
+                </button>
+                <Modal show={this.state.visible} onHide={this.handleClose}>
+                    <Modal.Header closeButton>
+                        <Modal.Title>Edit Account</Modal.Title>
+                    </Modal.Header>
+                    <Modal.Body>
+                        <input value={this.props.item.name} type="text" onChange={ e => {
+                            this.handleChange(this.props.item._id, e.target.value)
+                        }} />
+                        
+
+                        <button 
+                            className="btn btn-danger"
+                            onClick={ () => {
+                                this.deleteItem(this.props.item._id)
+                            }}
+                        >
+                            Delete Account
+                        </button>
+                    </Modal.Body>
+                    <Modal.Footer>
+                        <Button variant="primary" onClick={this.handleClose}>
+                        Done
+                        </Button>
+                    </Modal.Footer>
+                </Modal>
             </div>
         )
     }
 }
 
 class AccountsList extends React.Component {
-    constructor(props) {
-        super(props)
-        this.state = {...props}
-    }
     render() {
     return (
-        <table>
+        <table className="table table-striped">
             <tbody>
-                { this.state.data.map ( item => {
+                { this.props.data.map ( item => {
                     return (
                         <tr
                             className="account"
                             key={item._id}
                             id={item._id}
                         >
-                            {this.state.fields.map( (field, index) => {
+                            {this.props.fields.map( (field, index) => {
                                 return (
                                     <td key={index}>{item[field]}</td> 
                                 )
                             })}
                             <td>
-                                <a href="#" className="delete-button" onClick={ () => {
-                                    // this.state.deleteItem(item._id, this.state.items, this.state.apiCall)
-                                    this.setState( prevState => {
-                                            prevState.data.forEach( i => {
-                                                if (i._id === item._id) {
-                                                    i.showPopup = !i.showPopup
-                                                }
-                                            })
-                                            return prevState
-                                        })
-                                }}>Edit</a>
-                                {item.showPopup && <PopupAccount item={item} />}
+                                <PopupAccount
+                                    item={item}
+                                    deleteItem={this.props.deleteItem}
+                                    items="accounts"
+                                    action="deleteAccountById"
+                                />
                             </td>                            
                         </tr>
                     )
@@ -680,15 +759,21 @@ class AccountsList extends React.Component {
 
 const AddItemForm = props => {
     return (
-        <form onSubmit={props.action}>
-            {props.fields.map( (field, key) => {
-                return (
-                    <div key={key}>
-                        <input key={key} name={field.name} placeholder={field.ph} />
-                    </div>
-                )
-            })}
-            <button>Submit</button>
+        <form onSubmit={props.action} className="form">
+            <div className="row">
+                <div className="col-8">
+                    {props.fields.map( (field, key) => {
+                        return (
+                            <div key={key}>
+                                <input key={key} name={field.name} placeholder={field.ph} />
+                            </div>
+                        )
+                    })}
+                </div>
+                <div className="col-4">
+                    <button className="btn btn-primary">Submit</button>
+                </div>
+            </div>
         </form>
     )
 }
@@ -700,8 +785,8 @@ const TransactionList = props => {
     })
     
     return (
-        <table style={{width: "100%"}}>
-            <thead>
+        <table style={{width: "100%"}} className="table table-striped">
+            <thead  className="thead-light">
                 <tr>
                     <th>Date</th>
                     <th>Payee</th>
@@ -709,6 +794,7 @@ const TransactionList = props => {
                     <th>To</th>
                     <th>Category</th>
                     <th>Ammount</th>
+                    <th>Delete</th>
                 </tr>
             </thead>
             <tbody>
@@ -727,7 +813,7 @@ const TransactionList = props => {
                      <td>{ (category !== undefined) ? category.name : ""}</td> 
                      <td>{t.ammount}</td> 
                      <td>
-                         <button onClick={ () => {
+                         <button className="btn btn-danger" onClick={ () => {
                             props.deleteTransaction(t._id)
                             }}>delete
                         </button> 
@@ -742,8 +828,8 @@ const TransactionList = props => {
 const EntryList = props => {
     // console.log(props.es.entries)
     return (
-        <table style={{width: "100%"}}>
-            <thead>
+        <table style={{width: "100%"}} className="table table-striped">
+            <thead  className="thead-light">
                 <tr>
                     {/* <th>Year</th>
                     <th>Month</th> */}
@@ -751,6 +837,7 @@ const EntryList = props => {
                     <th>Budgeted</th>
                     <th>Activity</th>
                     <th>Available</th>
+                    <th>Delete</th>
                 </tr>
             </thead>
             <tbody>
@@ -779,7 +866,7 @@ const EntryList = props => {
                      <td>{e.activitySum}</td> 
                      <td>{e.available}</td>  
                      <td>
-                        <button onClick={ () => {
+                        <button className="btn btn-danger" onClick={ () => {
                             props.deleteEntry(e._id)
                         }}>delete
                         </button>
@@ -830,7 +917,7 @@ const AddTransactionForm = props => {
                 </select>
                 
                 <input name="ammount" type="text" placeholder="ammount" />
-                <button>Submit</button>
+                <button className="btn btn-primary">Submit</button>
             </form>
         </div> 
     )
@@ -850,7 +937,7 @@ const AddEntryForm = props => {
                 })}
             </select>
             <input name="budgeted" type="number" placeholder="Budgeted" />
-            <button>Submit</button>
+            <button className="btn btn-primary">Submit</button>
         </form>
     )
 }
