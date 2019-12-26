@@ -60,12 +60,37 @@ class App extends React.Component {
         })
     }
 
+    onChange = (id, name) => {
+        // console.log(id, name)
+        this.setState( prevState => {
+            prevState.budget.accounts.forEach( a => {
+                if (a._id === id ) {
+                    a.name = name
+                }
+            })
+        })
+    }
+    saveAccount = (id, name) => {
+        apis.updateAccountById(id, { name: name })
+        // this.state.budget.accounts.forEach( a => {
+        //     if (a._id === id) {
+        //         console.log(name === a.name)
+        //         if (a.name !== name) {
+        //             // this is allways true
+        //         }
+        //     }
+        // })
+    }
+
     gAAs() {
         apis.getAllAccounts(this.state.budget._id).then( apiResponse => {
             this.setState( prevState => {
                 prevState.budget.accounts = apiResponse.data.data
                 prevState.budget.accounts.forEach( a => {
                     a.balance = 0
+                    a.showPopup = false
+                    a.onChange = this.onChange
+                    a.saveAccount = this.saveAccount
                 })
                 return { prevState }
             })
@@ -428,7 +453,7 @@ class App extends React.Component {
             </div>
 
             <div className="main">
-                <idv className="left">
+                <div className="left">
             <div className="accounts">
                 <div className="account-form">
                     <AddItemForm
@@ -442,7 +467,7 @@ class App extends React.Component {
                 </div>
                 <div className="accountslist">
                     {this.state.budget.accounts.length !== 0 && 
-                        <ListItems
+                        <AccountsList
                             fields={["name", "balance"]}
                             data={this.state.budget.accounts}
                             deleteItem={this.deleteItem}
@@ -490,7 +515,7 @@ class App extends React.Component {
                     </ul>
                 </div>
             </div>
-            </idv>
+            </div>
 
             <div className="right">
 
@@ -578,6 +603,81 @@ const ListItems = props => {
         </table>
     )
 }
+
+
+class PopupAccount extends React.Component {
+    constructor(props) {
+        // console.log(props)
+        super(props)
+        this.state = {
+            _id: props.item._id,
+            name: props.item.name,
+            balance: props.item.balance
+        }
+    }
+    handleChange(id, name) {
+        this.setState({ name: name })
+        this.props.item.onChange(id, name)
+    }
+    componentWillUnmount() {
+        // console.log(this.state._id, this.state.name)
+        this.props.item.saveAccount(this.state._id, this.state.name)
+    }
+    render() {
+        return (
+            <div className="popupItem">
+                <input type="text" value={this.state.name} onChange={ e => {
+                    this.handleChange(this.state._id, e.target.value)
+                }} />
+            </div>
+        )
+    }
+}
+
+class AccountsList extends React.Component {
+    constructor(props) {
+        super(props)
+        this.state = {...props}
+    }
+    render() {
+    return (
+        <table>
+            <tbody>
+                { this.state.data.map ( item => {
+                    return (
+                        <tr
+                            className="account"
+                            key={item._id}
+                            id={item._id}
+                        >
+                            {this.state.fields.map( (field, index) => {
+                                return (
+                                    <td key={index}>{item[field]}</td> 
+                                )
+                            })}
+                            <td>
+                                <a href="#" className="delete-button" onClick={ () => {
+                                    // this.state.deleteItem(item._id, this.state.items, this.state.apiCall)
+                                    this.setState( prevState => {
+                                            prevState.data.forEach( i => {
+                                                if (i._id === item._id) {
+                                                    i.showPopup = !i.showPopup
+                                                }
+                                            })
+                                            return prevState
+                                        })
+                                }}>Edit</a>
+                                {item.showPopup && <PopupAccount item={item} />}
+                            </td>                            
+                        </tr>
+                    )
+                }) }
+            </tbody>
+        </table>
+    )
+    }
+}
+
 const AddItemForm = props => {
     return (
         <form onSubmit={props.action}>
@@ -655,7 +755,7 @@ const EntryList = props => {
             </thead>
             <tbody>
         { props.es.map( e => {
-            console.log(props.es)
+            // console.log(props.es)
             const category = findItemById(props.budget, e.categoryId)
             return (
                 <tr key={e._id} id={e._id}>
@@ -663,7 +763,8 @@ const EntryList = props => {
                      <td>{e.month}</td>  */}
                      <td>{ (category !== undefined) ? category.name : "NO_CATEGORY"}</td> 
                      <td>
-                         <input 
+                         <input
+                            className="makeItGreen" 
                             type="number" 
                             value={e.budgeted} 
                             onChange={ (ev) => {

@@ -68,3 +68,17 @@ tr, td {
 .right {
     width: 69%;
 }
+
+.popupItem {
+    border: 1px solid blue;
+    width: 200px;
+    height: 200px;
+    position: fixed;
+    background-color: blanchedalmond;
+}
+
+.makeItGreen {
+    border: 3px solid green;
+    margin: 5px;
+    padding: 5px;
+}
