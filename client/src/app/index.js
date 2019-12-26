@@ -470,26 +470,39 @@ class App extends React.Component {
 
             <div className="row">
                 <div className="col-2">
-            <div className="accounts">
-                <div className="accountslist">
-                    <ShowAddForm
-                        addItem={this.addItem}
-                        action="insertAccount"
-                        what="accounts"
-                        fields={[
-                            { name: "name", ph: "Add Account" }, 
-                        ]}
-                    />
-                    {this.state.budget.accounts.length !== 0 && 
-                        <AccountsList
-                            fields={["name", "balance"]}
-                            data={this.state.budget.accounts}
-                            deleteItem={this.deleteItem}
-                            items="accounts"
-                            apiCall="deleteAccountById" />}
-                </div>
-                
-            </div>
+
+
+            {/* <div className="accounts">
+                <ShowAddForm
+                    addItem={this.addItem}
+                    action="insertAccount"
+                    what="accounts"
+                    fields={[
+                        { name: "name", ph: "Add Account" }, 
+                    ]}
+                />
+                {this.state.budget.accounts.length !== 0 && 
+                    <ListItems
+                        fields={["name", "balance"]}
+                        data={this.state.budget.accounts}
+                        deleteItem={this.deleteItem}
+                        items="accounts"
+                        apiCall="deleteAccountById" />}                
+            </div> */}
+
+            <ItemsFormAndList
+                className="accounts"
+                addItem={this.addItem}
+                action="insertAccount"
+                items="accounts"
+                fields={[
+                    { name: "name", ph: "Add Account" }, 
+                ]}
+                showFields={["name", "balance"]}
+                data={this.state.budget.accounts}
+                deleteItem={this.deleteItem}
+                apiCall="deleteAccountById"
+            />
             
             <div className="categories">
                 <ShowAddForm
@@ -500,17 +513,13 @@ class App extends React.Component {
                         { name: "name", ph: "Add Category" }, 
                     ]}
                 />
-                <div className="categoriesList">
-                    <ul>
-                        <AccountsList
-                            fields={["name"]}
-                            data={this.state.budget.categories}
-                            deleteItem={this.deleteItem}
-                            items="categories"
-                            apiCall="deleteCategoryById"
-                        />
-                    </ul>
-                </div>
+                <ListItems
+                    fields={["name"]}
+                    data={this.state.budget.categories}
+                    deleteItem={this.deleteItem}
+                    items="categories"
+                    apiCall="deleteCategoryById"
+                />
             </div>
             
             <div className="payees">
@@ -522,19 +531,17 @@ class App extends React.Component {
                         { name: "name", ph: "Add Payee" }, 
                     ]}
                 />
-                <div className="payeesList">
-                    <ul>
-                        <AccountsList
-                            fields={["name"]}
-                            data={this.state.budget.payees}
-                            deleteItem={this.deleteItem}
-                            items="payees"
-                            apiCall="deletePayeeById"
-                        />
-                    </ul>
-                </div>
+                <ListItems
+                    fields={["name"]}
+                    data={this.state.budget.payees}
+                    deleteItem={this.deleteItem}
+                    items="payees"
+                    apiCall="deletePayeeById"
+                />
             </div>
-            </div>
+        </div>
+
+
 
             <div className="col-10">
 
@@ -580,6 +587,28 @@ class App extends React.Component {
     }
 }
 
+class ItemsFormAndList extends React.Component {
+    render() {
+        return (
+            <div className={this.props.className}>
+                <ShowAddForm
+                    addItem={this.props.addItem}
+                    action={this.props.action}
+                    what={this.props.items}
+                    fields={this.props.fields}
+                />
+                <ListItems
+                    fields={this.props.showFields}
+                    data={this.props.data}
+                    deleteItem={this.props.deleteItem}
+                    apiCall={this.props.apiCall}
+                    items={this.props.items}
+                />
+            </div>
+        )
+    }
+}
+
 
 class ShowAddForm extends React.Component {
     constructor(props) {
@@ -595,9 +624,12 @@ class ShowAddForm extends React.Component {
         this.setState({visible: false})
     }
     render() {
+        // console.log(this.props)
         return (
             <div>
-                <button className="btn btn-secondary btn-block" onClick={this.showAddForm}>Add</button>
+                <button className="btn btn-secondary btn-block" onClick={this.showAddForm}>
+                    Add {this.props.what}
+                </button>
                 <Modal show={this.state.visible} onHide={this.handleClose}>
                     <Modal.Header closeButton>
                         <Modal.Title>{this.props.fields[0].ph}</Modal.Title>
@@ -649,7 +681,7 @@ const CurrentState = props => {
     )
 }
 
-class PopupAccount extends React.Component {
+class EditItemPopup extends React.Component {
     state = {
         visible: false
     }
@@ -670,6 +702,7 @@ class PopupAccount extends React.Component {
     }
     
     render() {
+        // console.log(this.props)
         return (
             <div>
                 <button
@@ -680,7 +713,7 @@ class PopupAccount extends React.Component {
                 </button>
                 <Modal show={this.state.visible} onHide={this.handleClose}>
                     <Modal.Header closeButton>
-                        <Modal.Title>Edit Account</Modal.Title>
+                        <Modal.Title>Edit {this.props.items}</Modal.Title>
                     </Modal.Header>
                     <Modal.Body>
                         <input value={this.props.item.name} type="text" onChange={ e => {
@@ -694,7 +727,7 @@ class PopupAccount extends React.Component {
                                 this.deleteItem(this.props.item._id)
                             }}
                         >
-                            Delete Account
+                            Delete
                         </button>
                     </Modal.Body>
                     <Modal.Footer>
@@ -708,7 +741,7 @@ class PopupAccount extends React.Component {
     }
 }
 
-class AccountsList extends React.Component {
+class ListItems extends React.Component {
     render() {
     return (
         <table className="table table-striped">
@@ -726,7 +759,7 @@ class AccountsList extends React.Component {
                                 )
                             })}
                             <td>
-                                <PopupAccount
+                                <EditItemPopup
                                     item={item}
                                     deleteItem={this.props.deleteItem}
                                     items={this.props.items}
