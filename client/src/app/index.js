@@ -92,7 +92,7 @@ class App extends React.Component {
                     a.balance = 0
                     a.showPopup = false
                     a.onChange = this.onChange
-                    a.saveAccount = this.saveItemToDb
+                    a.saveAction = this.saveItemToDb
                     a.editAction = "updateAccountById"
                 })
                 return { prevState }
@@ -109,7 +109,7 @@ class App extends React.Component {
                 prevState.budget.categories = apiResponse.data.data
                 prevState.budget.categories.forEach( c => {
                     c.onChange = this.onChange
-                    c.saveAccount = this.saveItemToDb
+                    c.saveAction = this.saveItemToDb
                     c.editAction = "updateCategoryById"
                 })
                 return { prevState }
@@ -125,7 +125,7 @@ class App extends React.Component {
                 prevState.budget.payees = apiResponse.data.data
                 prevState.budget.payees.forEach( p => {
                     p.onChange = this.onChange
-                    p.saveAccount = this.saveItemToDb
+                    p.saveAction = this.saveItemToDb
                     p.editAction = "updatePayeeById"
                 })
                 return { prevState }
@@ -502,7 +502,6 @@ class App extends React.Component {
                 />
                 <div className="categoriesList">
                     <ul>
-                        {/* <ListItems */}
                         <AccountsList
                             fields={["name"]}
                             data={this.state.budget.categories}
@@ -650,32 +649,6 @@ const CurrentState = props => {
     )
 }
 
-const ListItems = props => {
-    return (
-        <table  className="table table-striped">
-            <tbody>
-                { props.data.map ( item => {
-                    return (
-                        <tr className="align-middle" key={item._id} id={item._id}>
-                            {props.fields.map( (field, index) => {
-                                return (
-                                    <td key={index}>{item[field]}</td> 
-                                )
-                            })}
-                            <td>
-                                <button className="btn btn-danger" onClick={ () => {
-                                    props.deleteItem(item._id, props.items, props.apiCall)
-                                }}>x</button>
-                            </td>
-                        </tr>
-                    )
-                }) }
-            </tbody>
-        </table>
-    )
-}
-
-
 class PopupAccount extends React.Component {
     state = {
         visible: false
@@ -685,7 +658,7 @@ class PopupAccount extends React.Component {
         this.props.item.onChange(id, name, this.props.items)
     }
     handleClose = () => {
-        this.props.item.saveAccount(this.props.item._id, this.props.item.name, this.props.item.editAction)
+        this.props.item.saveAction(this.props.item._id, this.props.item.name, this.props.item.editAction)
         this.setState({visible: false})
     }
     handleShow = () => {
@@ -757,7 +730,7 @@ class AccountsList extends React.Component {
                                     item={item}
                                     deleteItem={this.props.deleteItem}
                                     items={this.props.items}
-                                    action="deleteAccountById"
+                                    action={this.props.apiCall}
                                 />
                             </td>                            
                         </tr>
